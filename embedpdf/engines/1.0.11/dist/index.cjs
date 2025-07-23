@@ -1,5 +1,7 @@
-import { NoopLogger, PdfTaskHelper, PdfErrorCode, Task, Rotation, PdfAnnotationSubtype, stripPdfUnwantedMarkers, PdfAnnotationBorderStyle, dateToPdfDate, PdfAnnotationColorType, PdfPageObjectType, pdfAlphaColorToWebAlphaColor, webAlphaColorToPdfAlphaColor, quadToRect, pdfDateToDate, flagsToNames, PDF_FORM_FIELD_TYPE, toIntRect, transformRect, makeMatrix, AppearanceMode, toIntSize, transformSize, PdfActionType, PdfZoomMode, MatchFlag, rectToQuad, swap, PdfPageFlattenResult } from '@embedpdf/models';
-import { init } from '@embedpdf/pdfium';
+'use strict';
+
+var models = require('@embedpdf/models');
+var pdfium = require('@embedpdf/pdfium');
 
 /**
  * Read string from WASM heap
@@ -225,17 +227,17 @@ class PageContext {
 /**
  * Format of bitmap
  */
-var BitmapFormat;
+exports.BitmapFormat = void 0;
 (function (BitmapFormat) {
     BitmapFormat[BitmapFormat["Bitmap_Gray"] = 1] = "Bitmap_Gray";
     BitmapFormat[BitmapFormat["Bitmap_BGR"] = 2] = "Bitmap_BGR";
     BitmapFormat[BitmapFormat["Bitmap_BGRx"] = 3] = "Bitmap_BGRx";
     BitmapFormat[BitmapFormat["Bitmap_BGRA"] = 4] = "Bitmap_BGRA";
-})(BitmapFormat || (BitmapFormat = {}));
+})(exports.BitmapFormat || (exports.BitmapFormat = {}));
 /**
  * Pdf rendering flag
  */
-var RenderFlag;
+exports.RenderFlag = void 0;
 (function (RenderFlag) {
     RenderFlag[RenderFlag["ANNOT"] = 1] = "ANNOT";
     RenderFlag[RenderFlag["LCD_TEXT"] = 2] = "LCD_TEXT";
@@ -247,13 +249,13 @@ var RenderFlag;
     RenderFlag[RenderFlag["RENDER_FORCEHALFTONE"] = 1024] = "RENDER_FORCEHALFTONE";
     RenderFlag[RenderFlag["PRINTING"] = 2048] = "PRINTING";
     RenderFlag[RenderFlag["REVERSE_BYTE_ORDER"] = 16] = "REVERSE_BYTE_ORDER";
-})(RenderFlag || (RenderFlag = {}));
+})(exports.RenderFlag || (exports.RenderFlag = {}));
 const LOG_SOURCE$2 = 'PDFiumEngine';
 const LOG_CATEGORY$2 = 'Engine';
 /**
  * Error code of pdfium library
  */
-var PdfiumErrorCode;
+exports.PdfiumErrorCode = void 0;
 (function (PdfiumErrorCode) {
     PdfiumErrorCode[PdfiumErrorCode["Success"] = 0] = "Success";
     PdfiumErrorCode[PdfiumErrorCode["Unknown"] = 1] = "Unknown";
@@ -264,7 +266,7 @@ var PdfiumErrorCode;
     PdfiumErrorCode[PdfiumErrorCode["Page"] = 6] = "Page";
     PdfiumErrorCode[PdfiumErrorCode["XFALoad"] = 7] = "XFALoad";
     PdfiumErrorCode[PdfiumErrorCode["XFALayout"] = 8] = "XFALayout";
-})(PdfiumErrorCode || (PdfiumErrorCode = {}));
+})(exports.PdfiumErrorCode || (exports.PdfiumErrorCode = {}));
 const browserImageDataToBlobConverter = (pdfImageData, imageType = 'image/webp') => {
     // Check if we're in a browser environment
     if (typeof OffscreenCanvas === 'undefined') {
@@ -287,7 +289,7 @@ class PdfiumEngine {
      * @param logger - logger instance
      * @param imageDataToBlobConverter - function to convert ImageData to Blob
      */
-    constructor(pdfiumModule, logger = new NoopLogger(), imageDataConverter = browserImageDataToBlobConverter) {
+    constructor(pdfiumModule, logger = new models.NoopLogger(), imageDataConverter = browserImageDataToBlobConverter) {
         this.pdfiumModule = pdfiumModule;
         this.logger = logger;
         this.imageDataConverter = imageDataConverter;
@@ -303,7 +305,7 @@ class PdfiumEngine {
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Initialize`, 'Begin', 'General');
         this.pdfiumModule.PDFiumExt_Init();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Initialize`, 'End', 'General');
-        return PdfTaskHelper.resolve(true);
+        return models.PdfTaskHelper.resolve(true);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.destroy}
@@ -315,7 +317,7 @@ class PdfiumEngine {
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Destroy`, 'Begin', 'General');
         this.pdfiumModule.FPDF_DestroyLibrary();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Destroy`, 'End', 'General');
-        return PdfTaskHelper.resolve(true);
+        return models.PdfTaskHelper.resolve(true);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.openDocumentUrl}
@@ -327,7 +329,7 @@ class PdfiumEngine {
         const password = options?.password ?? '';
         this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentUrl called', file.url, mode);
         // We'll create a task to wrap asynchronous steps
-        const task = PdfTaskHelper.create();
+        const task = models.PdfTaskHelper.create();
         // Start an async procedure
         (async () => {
             try {
@@ -361,7 +363,7 @@ class PdfiumEngine {
             catch (err) {
                 this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentUrl error', err);
                 task.reject({
-                    code: PdfErrorCode.Unknown,
+                    code: models.PdfErrorCode.Unknown,
                     message: String(err),
                 });
             }
@@ -511,7 +513,7 @@ class PdfiumEngine {
             this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_LoadMemDocument failed with ${lastError}`);
             this.free(filePtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'End', file.id);
-            return PdfTaskHelper.reject({
+            return models.PdfTaskHelper.reject({
                 code: lastError,
                 message: `FPDF_LoadMemDocument failed`,
             });
@@ -528,7 +530,7 @@ class PdfiumEngine {
                 this.pdfiumModule.FPDF_CloseDocument(docPtr);
                 this.free(filePtr);
                 this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'End', file.id);
-                return PdfTaskHelper.reject({
+                return models.PdfTaskHelper.reject({
                     code: lastError,
                     message: `FPDF_GetPageSizeByIndexF failed`,
                 });
@@ -550,7 +552,7 @@ class PdfiumEngine {
         };
         this.cache.setDocument(file.id, filePtr, docPtr);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'End', file.id);
-        return PdfTaskHelper.resolve(pdfDoc);
+        return models.PdfTaskHelper.resolve(pdfDoc);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.openDocumentFromLoader}
@@ -598,7 +600,7 @@ class PdfiumEngine {
             this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_LoadCustomDocument failed with ${lastError}`);
             this.free(fileAccessPtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'End', file.id);
-            return PdfTaskHelper.reject({
+            return models.PdfTaskHelper.reject({
                 code: lastError,
                 message: `FPDF_LoadCustomDocument failed`,
             });
@@ -615,7 +617,7 @@ class PdfiumEngine {
                 this.pdfiumModule.FPDF_CloseDocument(docPtr);
                 this.free(fileAccessPtr);
                 this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'End', file.id);
-                return PdfTaskHelper.reject({
+                return models.PdfTaskHelper.reject({
                     code: lastError,
                     message: `FPDF_GetPageSizeByIndexF failed`,
                 });
@@ -637,7 +639,7 @@ class PdfiumEngine {
         };
         this.cache.setDocument(file.id, fileAccessPtr, docPtr);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'End', file.id);
-        return PdfTaskHelper.resolve(pdfDoc);
+        return models.PdfTaskHelper.resolve(pdfDoc);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getMetadata}
@@ -650,8 +652,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetMetadata`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -666,7 +668,7 @@ class PdfiumEngine {
             modificationDate: this.readMetaText(ctx.docPtr, 'ModDate'),
         };
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetMetadata`, 'End', doc.id);
-        return PdfTaskHelper.resolve(metadata);
+        return models.PdfTaskHelper.resolve(metadata);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getDocPermissions}
@@ -679,13 +681,13 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getDocPermissions`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const permissions = this.pdfiumModule.FPDF_GetDocPermissions(ctx.docPtr);
-        return PdfTaskHelper.resolve(permissions);
+        return models.PdfTaskHelper.resolve(permissions);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getDocUserPermissions}
@@ -698,13 +700,13 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getDocUserPermissions`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const permissions = this.pdfiumModule.FPDF_GetDocUserPermissions(ctx.docPtr);
-        return PdfTaskHelper.resolve(permissions);
+        return models.PdfTaskHelper.resolve(permissions);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getSignatures}
@@ -717,8 +719,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetSignatures`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -752,7 +754,7 @@ class PdfiumEngine {
             });
         }
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetSignatures`, 'End', doc.id);
-        return PdfTaskHelper.resolve(signatures);
+        return models.PdfTaskHelper.resolve(signatures);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getBookmarks}
@@ -765,14 +767,14 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getBookmarks`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const bookmarks = this.readPdfBookmarks(ctx.docPtr, 0);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetBookmarks`, 'End', doc.id);
-        return PdfTaskHelper.resolve({
+        return models.PdfTaskHelper.resolve({
             bookmarks,
         });
     }
@@ -781,15 +783,15 @@ class PdfiumEngine {
      *
      * @public
      */
-    renderPage(doc, page, scaleFactor = 1, rotation = Rotation.Degree0, dpr = 1, options = { withAnnotations: false }, imageType = 'image/webp') {
-        const task = new Task();
+    renderPage(doc, page, scaleFactor = 1, rotation = models.Rotation.Degree0, dpr = 1, options = { withAnnotations: false }, imageType = 'image/webp') {
+        const task = new models.Task();
         this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderPage', doc, page, scaleFactor, rotation, dpr, options);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPage`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPage`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -807,14 +809,14 @@ class PdfiumEngine {
      * @public
      */
     renderPageRect(doc, page, scaleFactor, rotation, dpr, rect, options, imageType = 'image/webp') {
-        const task = new Task();
+        const task = new models.Task();
         this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderPageRect', doc, page, scaleFactor, rotation, dpr, rect, options);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPageRect`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPageRect`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -834,14 +836,14 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAllAnnotations`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const annotations = this.readAllAnnotations(doc, ctx);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAllAnnotations`, 'End', doc.id);
-        return PdfTaskHelper.resolve(annotations);
+        return models.PdfTaskHelper.resolve(annotations);
     }
     readAllAnnotations(doc, ctx) {
         const annotationsByPage = {};
@@ -862,15 +864,15 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const annotations = this.readPageAnnotations(ctx, page);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, 'End', `${doc.id}-${page.index}`);
         this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, `${doc.id}-${page.index}`, annotations);
-        return PdfTaskHelper.resolve(annotations);
+        return models.PdfTaskHelper.resolve(annotations);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.createPageAnnotation}
@@ -883,8 +885,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -893,8 +895,8 @@ class PdfiumEngine {
         if (!annotationPtr) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
             pageCtx.release();
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantCreateAnnot,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantCreateAnnot,
                 message: 'can not create annotation with specified type',
             });
         }
@@ -902,23 +904,23 @@ class PdfiumEngine {
             this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
             pageCtx.release();
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantSetAnnotRect,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantSetAnnotRect,
                 message: 'can not set the rect of the annotation',
             });
         }
         let isSucceed = false;
         switch (annotation.type) {
-            case PdfAnnotationSubtype.INK:
+            case models.PdfAnnotationSubtype.INK:
                 isSucceed = this.addInkStroke(page, pageCtx.pagePtr, annotationPtr, annotation);
                 break;
-            case PdfAnnotationSubtype.STAMP:
+            case models.PdfAnnotationSubtype.STAMP:
                 isSucceed = this.addStampContent(ctx.docPtr, page, pageCtx.pagePtr, annotationPtr, annotation.rect, annotation.contents);
                 break;
-            case PdfAnnotationSubtype.UNDERLINE:
-            case PdfAnnotationSubtype.STRIKEOUT:
-            case PdfAnnotationSubtype.SQUIGGLY:
-            case PdfAnnotationSubtype.HIGHLIGHT:
+            case models.PdfAnnotationSubtype.UNDERLINE:
+            case models.PdfAnnotationSubtype.STRIKEOUT:
+            case models.PdfAnnotationSubtype.SQUIGGLY:
+            case models.PdfAnnotationSubtype.HIGHLIGHT:
                 isSucceed = this.addTextMarkupContent(page, pageCtx.pagePtr, annotationPtr, annotation);
                 break;
         }
@@ -926,8 +928,8 @@ class PdfiumEngine {
             this.pdfiumModule.FPDFPage_RemoveAnnot(pageCtx.pagePtr, annotationPtr);
             pageCtx.release();
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantSetAnnotContent,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantSetAnnotContent,
                 message: 'can not add content of the annotation',
             });
         }
@@ -943,9 +945,9 @@ class PdfiumEngine {
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
         return annotId >= 0
-            ? PdfTaskHelper.resolve(annotId)
-            : PdfTaskHelper.reject({
-                code: PdfErrorCode.CantCreateAnnot,
+            ? models.PdfTaskHelper.resolve(annotId)
+            : models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantCreateAnnot,
                 message: 'annotation created but index could not be determined',
             });
     }
@@ -964,8 +966,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -974,15 +976,15 @@ class PdfiumEngine {
         if (!annotPtr) {
             pageCtx.release();
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: 'annotation not found' });
+            return models.PdfTaskHelper.reject({ code: models.PdfErrorCode.NotFound, message: 'annotation not found' });
         }
         /* 1 ── (re)set bounding-box ────────────────────────────────────────────── */
         if (!this.setPageAnnoRect(page, pageCtx.pagePtr, annotPtr, annotation.rect)) {
             this.pdfiumModule.FPDFPage_CloseAnnot(annotPtr);
             pageCtx.release();
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantSetAnnotRect,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantSetAnnotRect,
                 message: 'failed to move annotation',
             });
         }
@@ -990,7 +992,7 @@ class PdfiumEngine {
         let ok = false;
         switch (annotation.type) {
             /* ── Ink ─────────────────────────────────────────────────────────────── */
-            case PdfAnnotationSubtype.INK: {
+            case models.PdfAnnotationSubtype.INK: {
                 /* clear every existing stroke first */
                 if (!this.pdfiumModule.FPDFAnnot_RemoveInkList(annotPtr))
                     break;
@@ -998,7 +1000,7 @@ class PdfiumEngine {
                 break;
             }
             /* ── Stamp ───────────────────────────────────────────────────────────── */
-            case PdfAnnotationSubtype.STAMP: {
+            case models.PdfAnnotationSubtype.STAMP: {
                 /* drop every page-object inside the annot */
                 for (let i = this.pdfiumModule.FPDFAnnot_GetObjectCount(annotPtr) - 1; i >= 0; i--) {
                     this.pdfiumModule.FPDFAnnot_RemoveObject(annotPtr, i);
@@ -1007,10 +1009,10 @@ class PdfiumEngine {
                 break;
             }
             /* ── Text-markup family ──────────────────────────────────────────────── */
-            case PdfAnnotationSubtype.HIGHLIGHT:
-            case PdfAnnotationSubtype.UNDERLINE:
-            case PdfAnnotationSubtype.STRIKEOUT:
-            case PdfAnnotationSubtype.SQUIGGLY: {
+            case models.PdfAnnotationSubtype.HIGHLIGHT:
+            case models.PdfAnnotationSubtype.UNDERLINE:
+            case models.PdfAnnotationSubtype.STRIKEOUT:
+            case models.PdfAnnotationSubtype.SQUIGGLY: {
                 /* replace quad-points / colour / strings in one go */
                 ok = this.addTextMarkupContent(page, pageCtx.pagePtr, annotPtr, annotation);
                 break;
@@ -1034,9 +1036,9 @@ class PdfiumEngine {
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
         return ok
-            ? PdfTaskHelper.resolve(true)
-            : PdfTaskHelper.reject({
-                code: PdfErrorCode.CantSetAnnotContent,
+            ? models.PdfTaskHelper.resolve(true)
+            : models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantSetAnnotContent,
                 message: 'failed to update annotation',
             });
     }
@@ -1051,8 +1053,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RemovePageAnnotation`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1070,7 +1072,7 @@ class PdfiumEngine {
         }
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RemovePageAnnotation`, 'End', `${doc.id}-${page.index}`);
-        return PdfTaskHelper.resolve(result);
+        return models.PdfTaskHelper.resolve(result);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getPageTextRects}
@@ -1083,8 +1085,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageTextRects`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1094,7 +1096,7 @@ class PdfiumEngine {
         this.pdfiumModule.FPDFText_ClosePage(textPagePtr);
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageTextRects`, 'End', `${doc.id}-${page.index}`);
-        return PdfTaskHelper.resolve(textRects);
+        return models.PdfTaskHelper.resolve(textRects);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.renderThumbnail}
@@ -1107,8 +1109,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderThumbnail`, 'End', `${doc.id}-${page.index}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1130,8 +1132,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAttachments`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1142,7 +1144,7 @@ class PdfiumEngine {
             attachments.push(attachment);
         }
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAttachments`, 'End', doc.id);
-        return PdfTaskHelper.resolve(attachments);
+        return models.PdfTaskHelper.resolve(attachments);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.readAttachmentContent}
@@ -1155,8 +1157,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1165,8 +1167,8 @@ class PdfiumEngine {
         if (!this.pdfiumModule.FPDFAttachment_GetFile(attachmentPtr, 0, 0, sizePtr)) {
             this.free(sizePtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantReadAttachmentSize,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantReadAttachmentSize,
                 message: 'can not read attachment size',
             });
         }
@@ -1176,8 +1178,8 @@ class PdfiumEngine {
             this.free(sizePtr);
             this.free(contentPtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantReadAttachmentContent,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantReadAttachmentContent,
                 message: 'can not read attachment content',
             });
         }
@@ -1189,7 +1191,7 @@ class PdfiumEngine {
         this.free(sizePtr);
         this.free(contentPtr);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
-        return PdfTaskHelper.resolve(buffer);
+        return models.PdfTaskHelper.resolve(buffer);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.setFormFieldValue}
@@ -1203,8 +1205,8 @@ class PdfiumEngine {
         if (!ctx) {
             this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', 'document is not opened');
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1221,8 +1223,8 @@ class PdfiumEngine {
             pageCtx.release();
             this.pdfiumModule.PDFiumExt_ExitFormFillEnvironment(formHandle);
             this.pdfiumModule.PDFiumExt_CloseFormFillInfo(formFillInfoPtr);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantFocusAnnot,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantFocusAnnot,
                 message: 'failed to set focused annotation',
             });
         }
@@ -1238,8 +1240,8 @@ class PdfiumEngine {
                         pageCtx.release();
                         this.pdfiumModule.PDFiumExt_ExitFormFillEnvironment(formHandle);
                         this.pdfiumModule.PDFiumExt_CloseFormFillInfo(formFillInfoPtr);
-                        return PdfTaskHelper.reject({
-                            code: PdfErrorCode.CantSelectText,
+                        return models.PdfTaskHelper.reject({
+                            code: models.PdfErrorCode.CantSelectText,
                             message: 'failed to select all text',
                         });
                     }
@@ -1261,8 +1263,8 @@ class PdfiumEngine {
                         pageCtx.release();
                         this.pdfiumModule.PDFiumExt_ExitFormFillEnvironment(formHandle);
                         this.pdfiumModule.PDFiumExt_CloseFormFillInfo(formFillInfoPtr);
-                        return PdfTaskHelper.reject({
-                            code: PdfErrorCode.CantSelectOption,
+                        return models.PdfTaskHelper.reject({
+                            code: models.PdfErrorCode.CantSelectOption,
                             message: 'failed to set index selected',
                         });
                     }
@@ -1280,8 +1282,8 @@ class PdfiumEngine {
                         pageCtx.release();
                         this.pdfiumModule.PDFiumExt_ExitFormFillEnvironment(formHandle);
                         this.pdfiumModule.PDFiumExt_CloseFormFillInfo(formFillInfoPtr);
-                        return PdfTaskHelper.reject({
-                            code: PdfErrorCode.CantCheckField,
+                        return models.PdfTaskHelper.reject({
+                            code: models.PdfErrorCode.CantCheckField,
                             message: 'failed to set field checked',
                         });
                     }
@@ -1294,7 +1296,7 @@ class PdfiumEngine {
         pageCtx.release();
         this.pdfiumModule.PDFiumExt_ExitFormFillEnvironment(formHandle);
         this.pdfiumModule.PDFiumExt_CloseFormFillInfo(formFillInfoPtr);
-        return PdfTaskHelper.resolve(true);
+        return models.PdfTaskHelper.resolve(true);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.flattenPage}
@@ -1307,8 +1309,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `flattenPage`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1316,7 +1318,7 @@ class PdfiumEngine {
         const result = this.pdfiumModule.FPDFPage_Flatten(pageCtx.pagePtr, flag);
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `flattenPage`, 'End', doc.id);
-        return PdfTaskHelper.resolve(result);
+        return models.PdfTaskHelper.resolve(result);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.extractPages}
@@ -1329,16 +1331,16 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const newDocPtr = this.pdfiumModule.FPDF_CreateNewDocument();
         if (!newDocPtr) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantCreateNewDoc,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantCreateNewDoc,
                 message: 'can not create new document',
             });
         }
@@ -1349,15 +1351,15 @@ class PdfiumEngine {
         if (!this.pdfiumModule.FPDF_ImportPagesByIndex(newDocPtr, ctx.docPtr, pageIndexesPtr, pageIndexes.length, 0)) {
             this.pdfiumModule.FPDF_CloseDocument(newDocPtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantImportPages,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantImportPages,
                 message: 'can not import pages to new document',
             });
         }
         const buffer = this.saveDocument(newDocPtr);
         this.pdfiumModule.FPDF_CloseDocument(newDocPtr);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
-        return PdfTaskHelper.resolve(buffer);
+        return models.PdfTaskHelper.resolve(buffer);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.extractText}
@@ -1370,8 +1372,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractText`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1390,7 +1392,7 @@ class PdfiumEngine {
         }
         const text = strings.join('\n\n');
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractText`, 'End', doc.id);
-        return PdfTaskHelper.resolve(text);
+        return models.PdfTaskHelper.resolve(text);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.getTextSlices}
@@ -1403,14 +1405,14 @@ class PdfiumEngine {
         /* ⚠︎ 1 — trivial case */
         if (slices.length === 0) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
-            return PdfTaskHelper.resolve([]);
+            return models.PdfTaskHelper.resolve([]);
         }
         /* ⚠︎ 2 — document must be open */
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -1431,19 +1433,19 @@ class PdfiumEngine {
                 for (const { slice, pos } of list) {
                     const bufPtr = this.malloc(2 * (slice.charCount + 1)); // UTF-16 + NIL
                     this.pdfiumModule.FPDFText_GetText(textPagePtr, slice.charIndex, slice.charCount, bufPtr);
-                    out[pos] = stripPdfUnwantedMarkers(this.pdfiumModule.pdfium.UTF16ToString(bufPtr));
+                    out[pos] = models.stripPdfUnwantedMarkers(this.pdfiumModule.pdfium.UTF16ToString(bufPtr));
                     this.free(bufPtr);
                 }
                 pageCtx.release();
             }
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
-            return PdfTaskHelper.resolve(out);
+            return models.PdfTaskHelper.resolve(out);
         }
         catch (e) {
             this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'getTextSlices error', e);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.Unknown,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.Unknown,
                 message: String(e),
             });
         }
@@ -1460,8 +1462,8 @@ class PdfiumEngine {
         const newDocPtr = this.pdfiumModule.FPDF_CreateNewDocument();
         if (!newDocPtr) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantCreateNewDoc,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantCreateNewDoc,
                 message: 'can not create new document',
             });
         }
@@ -1481,7 +1483,7 @@ class PdfiumEngine {
                     this.free(ptr.filePtr);
                 }
                 this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
-                return PdfTaskHelper.reject({
+                return models.PdfTaskHelper.reject({
                     code: lastError,
                     message: `FPDF_LoadMemDocument failed`,
                 });
@@ -1494,8 +1496,8 @@ class PdfiumEngine {
                     this.free(ptr.filePtr);
                 }
                 this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
-                return PdfTaskHelper.reject({
-                    code: PdfErrorCode.CantImportPages,
+                return models.PdfTaskHelper.reject({
+                    code: models.PdfErrorCode.CantImportPages,
                     message: 'can not import pages to new document',
                 });
             }
@@ -1511,7 +1513,7 @@ class PdfiumEngine {
             content: buffer,
         };
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
-        return PdfTaskHelper.resolve(file);
+        return models.PdfTaskHelper.resolve(file);
     }
     /**
      * Merges specific pages from multiple PDF documents in a custom order
@@ -1530,8 +1532,8 @@ class PdfiumEngine {
         const newDocPtr = this.pdfiumModule.FPDF_CreateNewDocument();
         if (!newDocPtr) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'End', configIds);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantCreateNewDoc,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantCreateNewDoc,
                 message: 'Cannot create new document',
             });
         }
@@ -1570,13 +1572,13 @@ class PdfiumEngine {
                 content: buffer,
             };
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'End', configIds);
-            return PdfTaskHelper.resolve(file);
+            return models.PdfTaskHelper.resolve(file);
         }
         catch (error) {
             this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'mergePages failed', error);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'End', configIds);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.CantImportPages,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.CantImportPages,
                 message: error instanceof Error ? error.message : 'Failed to merge pages',
             });
         }
@@ -1598,14 +1600,14 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SaveAsCopy`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const buffer = this.saveDocument(ctx.docPtr);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SaveAsCopy`, 'End', doc.id);
-        return PdfTaskHelper.resolve(buffer);
+        return models.PdfTaskHelper.resolve(buffer);
     }
     /**
      * {@inheritDoc @embedpdf/models!PdfEngine.closeDocument}
@@ -1618,14 +1620,14 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CloseDocument`, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         ctx.dispose();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CloseDocument`, 'End', doc.id);
-        return PdfTaskHelper.resolve(true);
+        return models.PdfTaskHelper.resolve(true);
     }
     /**
      * Memory allocation
@@ -1661,7 +1663,7 @@ class PdfiumEngine {
      * @private
      */
     addInkStroke(page, pagePtr, annotationPtr, annotation) {
-        if (!this.setBorderStyle(annotationPtr, PdfAnnotationBorderStyle.SOLID, annotation.strokeWidth)) {
+        if (!this.setBorderStyle(annotationPtr, models.PdfAnnotationBorderStyle.SOLID, annotation.strokeWidth)) {
             return false;
         }
         if (!this.setPageAnnoRect(page, pagePtr, annotationPtr, annotation.rect)) {
@@ -1673,13 +1675,13 @@ class PdfiumEngine {
         if (!this.setAnnotString(annotationPtr, 'T', annotation.author || '')) {
             return false;
         }
-        if (!this.setAnnotString(annotationPtr, 'M', dateToPdfDate(annotation.modified))) {
+        if (!this.setAnnotString(annotationPtr, 'M', models.dateToPdfDate(annotation.modified))) {
             return false;
         }
         if (!this.setAnnotationColor(annotationPtr, {
             color: annotation.color ?? '#FFFF00',
             opacity: annotation.opacity ?? 1,
-        }, PdfAnnotationColorType.Color)) {
+        }, models.PdfAnnotationColorType.Color)) {
             return false;
         }
         return true;
@@ -1706,13 +1708,13 @@ class PdfiumEngine {
         if (!this.setAnnotString(annotationPtr, 'T', annotation.author || '')) {
             return false;
         }
-        if (!this.setAnnotString(annotationPtr, 'M', dateToPdfDate(annotation.modified))) {
+        if (!this.setAnnotString(annotationPtr, 'M', models.dateToPdfDate(annotation.modified))) {
             return false;
         }
         if (!this.setAnnotationColor(annotationPtr, {
             color: annotation.color ?? '#FFFF00',
             opacity: annotation.opacity ?? 1,
-        }, PdfAnnotationColorType.Color)) {
+        }, models.PdfAnnotationColorType.Color)) {
             return false;
         }
         return true;
@@ -1732,7 +1734,7 @@ class PdfiumEngine {
     addStampContent(docPtr, page, pagePtr, annotationPtr, rect, contents) {
         for (const content of contents) {
             switch (content.type) {
-                case PdfPageObjectType.IMAGE:
+                case models.PdfPageObjectType.IMAGE:
                     return this.addImageObject(docPtr, page, pagePtr, annotationPtr, rect.origin, content.imageData);
             }
         }
@@ -1767,7 +1769,7 @@ class PdfiumEngine {
             this.pdfiumModule.pdfium.setValue(bitmapBufferPtr + i * bytesPerPixel + 2, red, 'i8');
             this.pdfiumModule.pdfium.setValue(bitmapBufferPtr + i * bytesPerPixel + 3, alpha, 'i8');
         }
-        const format = BitmapFormat.Bitmap_BGRA;
+        const format = exports.BitmapFormat.Bitmap_BGRA;
         const bitmapPtr = this.pdfiumModule.FPDFBitmap_CreateEx(imageData.width, imageData.height, format, bitmapBufferPtr, 0);
         if (!bitmapPtr) {
             this.free(bitmapBufferPtr);
@@ -1986,8 +1988,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, label, 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -2006,7 +2008,7 @@ class PdfiumEngine {
         /* ── 3. cleanup & resolve task ───────────────────────── */
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, label, 'End', doc.id);
-        return PdfTaskHelper.resolve({ runs });
+        return models.PdfTaskHelper.resolve({ runs });
     }
     /**
      * Group consecutive glyphs that belong to the same CPDF_TextObject
@@ -2150,8 +2152,8 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageGlyphs', 'End', doc.id);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -2171,7 +2173,7 @@ class PdfiumEngine {
         // ── 4) clean-up native handles ─────────────────────────────
         pageCtx.release();
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageGlyphs', 'End', doc.id);
-        return PdfTaskHelper.resolve(glyphs);
+        return models.PdfTaskHelper.resolve(glyphs);
     }
     readCharBox(page, pagePtr, textPagePtr, charIndex) {
         const topPtr = this.malloc(8);
@@ -2256,85 +2258,85 @@ class PdfiumEngine {
         const subType = this.pdfiumModule.FPDFAnnot_GetSubtype(annotationPtr);
         let annotation;
         switch (subType) {
-            case PdfAnnotationSubtype.TEXT:
+            case models.PdfAnnotationSubtype.TEXT:
                 {
                     annotation = this.readPdfTextAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.FREETEXT:
+            case models.PdfAnnotationSubtype.FREETEXT:
                 {
                     annotation = this.readPdfFreeTextAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.LINK:
+            case models.PdfAnnotationSubtype.LINK:
                 {
                     annotation = this.readPdfLinkAnno(page, pageCtx.docPtr, pageCtx.pagePtr, pageCtx.getTextPage(), annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.WIDGET:
+            case models.PdfAnnotationSubtype.WIDGET:
                 {
                     annotation = this.readPdfWidgetAnno(page, pageCtx.pagePtr, annotationPtr, pageCtx.getFormHandle(), index);
                 }
                 break;
-            case PdfAnnotationSubtype.FILEATTACHMENT:
+            case models.PdfAnnotationSubtype.FILEATTACHMENT:
                 {
                     annotation = this.readPdfFileAttachmentAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.INK:
+            case models.PdfAnnotationSubtype.INK:
                 {
                     annotation = this.readPdfInkAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.POLYGON:
+            case models.PdfAnnotationSubtype.POLYGON:
                 {
                     annotation = this.readPdfPolygonAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.POLYLINE:
+            case models.PdfAnnotationSubtype.POLYLINE:
                 {
                     annotation = this.readPdfPolylineAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.LINE:
+            case models.PdfAnnotationSubtype.LINE:
                 {
                     annotation = this.readPdfLineAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.HIGHLIGHT:
+            case models.PdfAnnotationSubtype.HIGHLIGHT:
                 annotation = this.readPdfHighlightAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 break;
-            case PdfAnnotationSubtype.STAMP:
+            case models.PdfAnnotationSubtype.STAMP:
                 {
                     annotation = this.readPdfStampAnno(pageCtx.docPtr, page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.SQUARE:
+            case models.PdfAnnotationSubtype.SQUARE:
                 {
                     annotation = this.readPdfSquareAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.CIRCLE:
+            case models.PdfAnnotationSubtype.CIRCLE:
                 {
                     annotation = this.readPdfCircleAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.UNDERLINE:
+            case models.PdfAnnotationSubtype.UNDERLINE:
                 {
                     annotation = this.readPdfUnderlineAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.SQUIGGLY:
+            case models.PdfAnnotationSubtype.SQUIGGLY:
                 {
                     annotation = this.readPdfSquigglyAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.STRIKEOUT:
+            case models.PdfAnnotationSubtype.STRIKEOUT:
                 {
                     annotation = this.readPdfStrikeOutAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
                 break;
-            case PdfAnnotationSubtype.CARET:
+            case models.PdfAnnotationSubtype.CARET:
                 {
                     annotation = this.readPdfCaretAnno(page, pageCtx.pagePtr, annotationPtr, index);
                 }
@@ -2359,7 +2361,7 @@ class PdfiumEngine {
      *
      * @private
      */
-    readAnnotationColor(annotationPtr, colorType = PdfAnnotationColorType.Color) {
+    readAnnotationColor(annotationPtr, colorType = models.PdfAnnotationColorType.Color) {
         const rPtr = this.malloc(4);
         const gPtr = this.malloc(4);
         const bPtr = this.malloc(4);
@@ -2397,9 +2399,9 @@ class PdfiumEngine {
      *
      * @private
      */
-    resolveAnnotationColor(annotationPtr, colorType = PdfAnnotationColorType.Color, fallback = { red: 255, green: 245, blue: 155, alpha: 255 }) {
+    resolveAnnotationColor(annotationPtr, colorType = models.PdfAnnotationColorType.Color, fallback = { red: 255, green: 245, blue: 155, alpha: 255 }) {
         const pdfColor = this.readAnnotationColor(annotationPtr, colorType) ?? fallback;
-        return pdfAlphaColorToWebAlphaColor(pdfColor);
+        return models.pdfAlphaColorToWebAlphaColor(pdfColor);
     }
     /**
      * Set the fill/stroke colour for a **Highlight / Underline / StrikeOut / Squiggly** markup annotation.
@@ -2412,8 +2414,8 @@ class PdfiumEngine {
      *
      * @private
      */
-    setAnnotationColor(annotationPtr, webAlphaColor, colorType = PdfAnnotationColorType.Color) {
-        const pdfAlphaColor = webAlphaColorToPdfAlphaColor(webAlphaColor);
+    setAnnotationColor(annotationPtr, webAlphaColor, colorType = models.PdfAnnotationColorType.Color) {
+        const pdfAlphaColor = models.webAlphaColorToPdfAlphaColor(webAlphaColor);
         return this.pdfiumModule.EPDFAnnot_SetColor(annotationPtr, colorType, pdfAlphaColor.red & 0xff, pdfAlphaColor.green & 0xff, pdfAlphaColor.blue & 0xff, (pdfAlphaColor.alpha ?? 255) & 0xff);
     }
     /**
@@ -2432,11 +2434,11 @@ class PdfiumEngine {
         /* 1 ── allocate tmp storage for the returned width ─────────────── */
         const widthPtr = this.malloc(4);
         let width = 0;
-        let style = PdfAnnotationBorderStyle.UNKNOWN;
+        let style = models.PdfAnnotationBorderStyle.UNKNOWN;
         let ok = false;
         style = this.pdfiumModule.EPDFAnnot_GetBorderStyle(annotationPtr, widthPtr);
         width = this.pdfiumModule.pdfium.getValue(widthPtr, 'float');
-        ok = style !== PdfAnnotationBorderStyle.UNKNOWN;
+        ok = style !== models.PdfAnnotationBorderStyle.UNKNOWN;
         this.free(widthPtr);
         return { ok, style, width };
     }
@@ -2564,7 +2566,7 @@ class PdfiumEngine {
             }
             this.free(quadPtr);
         }
-        return quads.map(quadToRect);
+        return quads.map(models.quadToRect);
     }
     /**
      * Set the quadrilaterals for a **Highlight / Underline / StrikeOut / Squiggly** markup annotation.
@@ -2583,7 +2585,7 @@ class PdfiumEngine {
         const buf = this.malloc(FS_QUADPOINTSF_SIZE);
         /** write one quad into `buf` in annotation space */
         const writeQuad = (r) => {
-            const q = rectToQuad(r); // TL, TR, BR, BL
+            const q = models.rectToQuad(r); // TL, TR, BR, BL
             const p1 = this.convertDevicePointToPagePoint(page, q.p1);
             const p2 = this.convertDevicePointToPagePoint(page, q.p2);
             const p3 = this.convertDevicePointToPagePoint(page, q.p3); // BR
@@ -2690,7 +2692,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, annoRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const contents = this.getAnnotString(annotationPtr, 'Contents') || '';
         const state = this.getAnnotString(annotationPtr, 'State');
         const stateModel = this.getAnnotString(annotationPtr, 'StateModel');
@@ -2699,7 +2701,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.TEXT,
+            type: models.PdfAnnotationSubtype.TEXT,
             contents,
             ...webAlphaColor,
             rect,
@@ -2726,12 +2728,12 @@ class PdfiumEngine {
         const contents = this.getAnnotString(annotationPtr, 'Contents') || '';
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const richContent = this.getAnnotRichContent(annotationPtr);
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.FREETEXT,
+            type: models.PdfAnnotationSubtype.FREETEXT,
             richContent,
             contents,
             author,
@@ -2761,7 +2763,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, annoRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const utf16Length = this.pdfiumModule.FPDFText_GetBoundedText(textPagePtr, left, top, right, bottom, 0, 0);
         const bytesCount = (utf16Length + 1) * 2; // include NIL
         const textBufferPtr = this.malloc(bytesCount);
@@ -2776,7 +2778,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.LINK,
+            type: models.PdfAnnotationSubtype.LINK,
             text,
             target,
             rect,
@@ -2800,12 +2802,12 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const field = this.readPdfWidgetAnnoField(formHandle, annotationPtr);
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.WIDGET,
+            type: models.PdfAnnotationSubtype.WIDGET,
             rect,
             field,
             author,
@@ -2827,11 +2829,11 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.FILEATTACHMENT,
+            type: models.PdfAnnotationSubtype.FILEATTACHMENT,
             rect,
             author,
             modified,
@@ -2852,7 +2854,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const webAlphaColor = this.resolveAnnotationColor(annotationPtr);
         const { width: strokeWidth } = this.getBorderStyle(annotationPtr);
         const inkList = this.getInkList(page, annotationPtr);
@@ -2861,7 +2863,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.INK,
+            type: models.PdfAnnotationSubtype.INK,
             ...(intent && { intent }),
             blendMode,
             ...webAlphaColor,
@@ -2887,12 +2889,12 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const vertices = this.readPdfAnnoVertices(page, pagePtr, annotationPtr);
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.POLYGON,
+            type: models.PdfAnnotationSubtype.POLYGON,
             rect,
             vertices,
             author,
@@ -2914,12 +2916,12 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const vertices = this.readPdfAnnoVertices(page, pagePtr, annotationPtr);
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.POLYLINE,
+            type: models.PdfAnnotationSubtype.POLYLINE,
             rect,
             vertices,
             author,
@@ -2941,7 +2943,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const startPointPtr = this.malloc(8);
         const endPointPtr = this.malloc(8);
         this.pdfiumModule.FPDFAnnot_GetLine(annotationPtr, startPointPtr, endPointPtr);
@@ -2962,7 +2964,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.LINE,
+            type: models.PdfAnnotationSubtype.LINE,
             rect,
             startPoint,
             endPoint,
@@ -2988,13 +2990,13 @@ class PdfiumEngine {
         const blendMode = this.pdfiumModule.EPDFAnnot_GetBlendMode(annotationPtr);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const contents = this.getAnnotString(annotationPtr, 'Contents') || '';
         return {
             pageIndex: page.index,
             id: index,
             blendMode,
-            type: PdfAnnotationSubtype.HIGHLIGHT,
+            type: models.PdfAnnotationSubtype.HIGHLIGHT,
             rect,
             contents,
             segmentRects,
@@ -3018,7 +3020,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const segmentRects = this.getQuadPointsAnno(page, annotationPtr);
         const contents = this.getAnnotString(annotationPtr, 'Contents') || '';
         const webAlphaColor = this.resolveAnnotationColor(annotationPtr);
@@ -3027,7 +3029,7 @@ class PdfiumEngine {
             pageIndex: page.index,
             id: index,
             blendMode,
-            type: PdfAnnotationSubtype.UNDERLINE,
+            type: models.PdfAnnotationSubtype.UNDERLINE,
             rect,
             contents,
             segmentRects,
@@ -3051,7 +3053,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const segmentRects = this.getQuadPointsAnno(page, annotationPtr);
         const contents = this.getAnnotString(annotationPtr, 'Contents') || '';
         const webAlphaColor = this.resolveAnnotationColor(annotationPtr);
@@ -3060,7 +3062,7 @@ class PdfiumEngine {
             pageIndex: page.index,
             id: index,
             blendMode,
-            type: PdfAnnotationSubtype.STRIKEOUT,
+            type: models.PdfAnnotationSubtype.STRIKEOUT,
             rect,
             contents,
             segmentRects,
@@ -3084,7 +3086,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const segmentRects = this.getQuadPointsAnno(page, annotationPtr);
         const contents = this.getAnnotString(annotationPtr, 'Contents') || '';
         const webAlphaColor = this.resolveAnnotationColor(annotationPtr);
@@ -3093,7 +3095,7 @@ class PdfiumEngine {
             pageIndex: page.index,
             id: index,
             blendMode,
-            type: PdfAnnotationSubtype.SQUIGGLY,
+            type: models.PdfAnnotationSubtype.SQUIGGLY,
             rect,
             contents,
             segmentRects,
@@ -3117,11 +3119,11 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.CARET,
+            type: models.PdfAnnotationSubtype.CARET,
             rect,
             author,
             modified,
@@ -3143,7 +3145,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         const contents = [];
         const objectCount = this.pdfiumModule.FPDFAnnot_GetObjectCount(annotationPtr);
         for (let i = 0; i < objectCount; i++) {
@@ -3156,7 +3158,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.STAMP,
+            type: models.PdfAnnotationSubtype.STAMP,
             rect,
             contents,
             author,
@@ -3173,11 +3175,11 @@ class PdfiumEngine {
     readPdfPageObject(pageObjectPtr) {
         const type = this.pdfiumModule.FPDFPageObj_GetType(pageObjectPtr);
         switch (type) {
-            case PdfPageObjectType.PATH:
+            case models.PdfPageObjectType.PATH:
                 return this.readPathObject(pageObjectPtr);
-            case PdfPageObjectType.IMAGE:
+            case models.PdfPageObjectType.IMAGE:
                 return this.readImageObject(pageObjectPtr);
-            case PdfPageObjectType.FORM:
+            case models.PdfPageObjectType.FORM:
                 return this.readFormObject(pageObjectPtr);
         }
     }
@@ -3211,7 +3213,7 @@ class PdfiumEngine {
         }
         const matrix = this.readPdfPageObjectTransformMatrix(pathObjectPtr);
         return {
-            type: PdfPageObjectType.PATH,
+            type: models.PdfPageObjectType.PATH,
             bounds,
             segments,
             matrix,
@@ -3260,7 +3262,7 @@ class PdfiumEngine {
         const array = new Uint8ClampedArray(pixelCount * bytesPerPixel);
         for (let i = 0; i < pixelCount; i++) {
             switch (format) {
-                case BitmapFormat.Bitmap_BGR:
+                case exports.BitmapFormat.Bitmap_BGR:
                     {
                         const blue = this.pdfiumModule.pdfium.getValue(bitmapBufferPtr + i * 3, 'i8');
                         const green = this.pdfiumModule.pdfium.getValue(bitmapBufferPtr + i * 3 + 1, 'i8');
@@ -3276,7 +3278,7 @@ class PdfiumEngine {
         const imageData = new ImageData(array, bitmapWidth, bitmapHeight);
         const matrix = this.readPdfPageObjectTransformMatrix(imageObjectPtr);
         return {
-            type: PdfPageObjectType.IMAGE,
+            type: models.PdfPageObjectType.IMAGE,
             imageData,
             matrix,
         };
@@ -3300,7 +3302,7 @@ class PdfiumEngine {
         }
         const matrix = this.readPdfPageObjectTransformMatrix(formObjectPtr);
         return {
-            type: PdfPageObjectType.FORM,
+            type: models.PdfPageObjectType.FORM,
             objects,
             matrix,
         };
@@ -3358,7 +3360,7 @@ class PdfiumEngine {
      */
     getAnnotationFlags(annotationPtr) {
         const rawFlags = this.pdfiumModule.FPDFAnnot_GetFlags(annotationPtr); // number
-        return flagsToNames(rawFlags);
+        return models.flagsToNames(rawFlags);
     }
     /**
      * Read circle annotation
@@ -3376,25 +3378,25 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
-        const { color, opacity } = this.resolveAnnotationColor(annotationPtr, PdfAnnotationColorType.InteriorColor);
+        const modified = models.pdfDateToDate(modifiedRaw);
+        const { color, opacity } = this.resolveAnnotationColor(annotationPtr, models.PdfAnnotationColorType.InteriorColor);
         const { color: strokeColor } = this.resolveAnnotationColor(annotationPtr);
         let { style: strokeStyle, width: strokeWidth } = this.getBorderStyle(annotationPtr);
         let cloudyBorderIntensity;
         let cloudyBorderInset;
-        if (strokeStyle === PdfAnnotationBorderStyle.CLOUDY ||
-            strokeStyle === PdfAnnotationBorderStyle.UNKNOWN) {
+        if (strokeStyle === models.PdfAnnotationBorderStyle.CLOUDY ||
+            strokeStyle === models.PdfAnnotationBorderStyle.UNKNOWN) {
             const { ok: hasEffect, intensity } = this.getBorderEffect(annotationPtr);
             if (hasEffect) {
                 cloudyBorderIntensity = intensity;
-                strokeStyle = PdfAnnotationBorderStyle.CLOUDY;
+                strokeStyle = models.PdfAnnotationBorderStyle.CLOUDY;
                 const { ok: hasInset, left, top, right, bottom, } = this.getRectangleDifferences(annotationPtr);
                 if (hasInset)
                     cloudyBorderInset = [left, top, right, bottom];
             }
         }
         let strokeDashArray;
-        if (strokeStyle === PdfAnnotationBorderStyle.DASHED) {
+        if (strokeStyle === models.PdfAnnotationBorderStyle.DASHED) {
             const { ok, pattern } = this.getBorderDashPattern(annotationPtr);
             if (ok) {
                 strokeDashArray = pattern;
@@ -3403,7 +3405,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.CIRCLE,
+            type: models.PdfAnnotationSubtype.CIRCLE,
             flags,
             color,
             opacity,
@@ -3434,25 +3436,25 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
-        const { color, opacity } = this.resolveAnnotationColor(annotationPtr, PdfAnnotationColorType.InteriorColor);
+        const modified = models.pdfDateToDate(modifiedRaw);
+        const { color, opacity } = this.resolveAnnotationColor(annotationPtr, models.PdfAnnotationColorType.InteriorColor);
         const { color: strokeColor } = this.resolveAnnotationColor(annotationPtr);
         let { style: strokeStyle, width: strokeWidth } = this.getBorderStyle(annotationPtr);
         let cloudyBorderIntensity;
         let cloudyBorderInset;
-        if (strokeStyle === PdfAnnotationBorderStyle.CLOUDY ||
-            strokeStyle === PdfAnnotationBorderStyle.UNKNOWN) {
+        if (strokeStyle === models.PdfAnnotationBorderStyle.CLOUDY ||
+            strokeStyle === models.PdfAnnotationBorderStyle.UNKNOWN) {
             const { ok: hasEffect, intensity } = this.getBorderEffect(annotationPtr);
             if (hasEffect) {
                 cloudyBorderIntensity = intensity;
-                strokeStyle = PdfAnnotationBorderStyle.CLOUDY;
+                strokeStyle = models.PdfAnnotationBorderStyle.CLOUDY;
                 const { ok: hasInset, left, top, right, bottom, } = this.getRectangleDifferences(annotationPtr);
                 if (hasInset)
                     cloudyBorderInset = [left, top, right, bottom];
             }
         }
         let strokeDashArray;
-        if (strokeStyle === PdfAnnotationBorderStyle.DASHED) {
+        if (strokeStyle === models.PdfAnnotationBorderStyle.DASHED) {
             const { ok, pattern } = this.getBorderDashPattern(annotationPtr);
             if (ok) {
                 strokeDashArray = pattern;
@@ -3461,7 +3463,7 @@ class PdfiumEngine {
         return {
             pageIndex: page.index,
             id: index,
-            type: PdfAnnotationSubtype.SQUARE,
+            type: models.PdfAnnotationSubtype.SQUARE,
             flags,
             color,
             opacity,
@@ -3492,7 +3494,7 @@ class PdfiumEngine {
         const rect = this.convertPageRectToDeviceRect(page, pagePtr, pageRect);
         const author = this.getAnnotString(annotationPtr, 'T');
         const modifiedRaw = this.getAnnotString(annotationPtr, 'M');
-        const modified = pdfDateToDate(modifiedRaw);
+        const modified = models.pdfDateToDate(modifiedRaw);
         return {
             pageIndex: page.index,
             id: index,
@@ -3670,7 +3672,7 @@ class PdfiumEngine {
             return this.pdfiumModule.FPDFAnnot_GetFormFieldValue(formHandle, annotationPtr, buffer, bufferLength);
         }, this.pdfiumModule.pdfium.UTF16ToString);
         const options = [];
-        if (type === PDF_FORM_FIELD_TYPE.COMBOBOX || type === PDF_FORM_FIELD_TYPE.LISTBOX) {
+        if (type === models.PDF_FORM_FIELD_TYPE.COMBOBOX || type === models.PDF_FORM_FIELD_TYPE.LISTBOX) {
             const count = this.pdfiumModule.FPDFAnnot_GetOptionCount(formHandle, annotationPtr);
             for (let i = 0; i < count; i++) {
                 const label = readString(this.pdfiumModule.pdfium, (buffer, bufferLength) => {
@@ -3684,7 +3686,7 @@ class PdfiumEngine {
             }
         }
         let isChecked = false;
-        if (type === PDF_FORM_FIELD_TYPE.CHECKBOX || type === PDF_FORM_FIELD_TYPE.RADIOBUTTON) {
+        if (type === models.PDF_FORM_FIELD_TYPE.CHECKBOX || type === models.PDF_FORM_FIELD_TYPE.RADIOBUTTON) {
             isChecked = this.pdfiumModule.FPDFAnnot_IsChecked(formHandle, annotationPtr);
         }
         return {
@@ -3703,15 +3705,15 @@ class PdfiumEngine {
      * @public
      */
     renderAnnotation(doc, page, annotation, scaleFactor, rotation, dpr = 1, // device-pixel-ratio (canvas)
-    mode = AppearanceMode.Normal, imageType = 'image/webp') {
+    mode = models.AppearanceMode.Normal, imageType = 'image/webp') {
         this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderAnnotation', doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'Begin', `${doc.id}-${page.index}-${annotation.id}`);
-        const task = new Task();
+        const task = new models.Task();
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.DocNotOpen,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
@@ -3721,29 +3723,29 @@ class PdfiumEngine {
         if (!annotPtr) {
             pageCtx.release();
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.NotFound,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.NotFound,
                 message: 'annotation not found',
             });
         }
         const finalScale = scaleFactor * dpr;
         /* ── 2. decide bitmap size (integer pixels) ──────────────────────── */
         const annotRect = annotation.rect;
-        const bitmapRect = toIntRect(transformRect(page.size, annotRect, rotation, finalScale));
-        const format = BitmapFormat.Bitmap_BGRA;
+        const bitmapRect = models.toIntRect(models.transformRect(page.size, annotRect, rotation, finalScale));
+        const format = exports.BitmapFormat.Bitmap_BGRA;
         const bytesPerPixel = 4;
         const bitmapHeapLength = bitmapRect.size.width * bitmapRect.size.height * bytesPerPixel;
         const bitmapHeapPtr = this.malloc(bitmapHeapLength);
         const bitmapPtr = this.pdfiumModule.FPDFBitmap_CreateEx(bitmapRect.size.width, bitmapRect.size.height, format, bitmapHeapPtr, bitmapRect.size.width * bytesPerPixel);
         this.pdfiumModule.FPDFBitmap_FillRect(bitmapPtr, 0, 0, bitmapRect.size.width, bitmapRect.size.height, 0x00000000);
-        const matrix = makeMatrix(annotation.rect, rotation, finalScale);
+        const matrix = models.makeMatrix(annotation.rect, rotation, finalScale);
         // Allocate memory for the matrix on the wasm heap and write to it
         const matrixSize = 6 * 4;
         const matrixPtr = this.malloc(matrixSize);
         const matrixView = new Float32Array(this.pdfiumModule.pdfium.HEAPF32.buffer, matrixPtr, 6);
         matrixView.set([matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f]);
         /* ── 5. call the native helper with the new matrix ───────────────── */
-        const FLAGS = RenderFlag.REVERSE_BYTE_ORDER;
+        const FLAGS = exports.RenderFlag.REVERSE_BYTE_ORDER;
         const ok = !!this.pdfiumModule.EPDF_RenderAnnotBitmap(bitmapPtr, pageCtx.pagePtr, annotPtr, mode, matrixPtr, FLAGS);
         /* ── 6. tear down native resources ───────────────────────────────── */
         this.free(matrixPtr); // Free the matrix memory
@@ -3753,8 +3755,8 @@ class PdfiumEngine {
         if (!ok) {
             this.free(bitmapHeapPtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
-            return PdfTaskHelper.reject({
-                code: PdfErrorCode.Unknown,
+            return models.PdfTaskHelper.reject({
+                code: models.PdfErrorCode.Unknown,
                 message: 'EPDF_RenderAnnotBitmap failed',
             });
         }
@@ -3769,7 +3771,7 @@ class PdfiumEngine {
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
         this.imageDataConverter(imageData, imageType)
             .then((blob) => task.resolve(blob))
-            .catch((err) => task.reject({ code: PdfErrorCode.Unknown, message: String(err) }));
+            .catch((err) => task.reject({ code: models.PdfErrorCode.Unknown, message: String(err) }));
         return task;
     }
     /**
@@ -3785,18 +3787,18 @@ class PdfiumEngine {
      * @private
      */
     renderPageRectToImageData(ctx, page, rect, scaleFactor, rotation, dpr, options) {
-        const format = BitmapFormat.Bitmap_BGRA;
+        const format = exports.BitmapFormat.Bitmap_BGRA;
         const bytesPerPixel = 4;
         // Round the transformed dimensions to whole pixels
-        const rectSize = toIntRect(transformRect(page.size, rect, rotation, scaleFactor * dpr));
-        const pageSize = toIntSize(transformSize(page.size, rotation, scaleFactor * dpr));
+        const rectSize = models.toIntRect(models.transformRect(page.size, rect, rotation, scaleFactor * dpr));
+        const pageSize = models.toIntSize(models.transformSize(page.size, rotation, scaleFactor * dpr));
         const bitmapHeapLength = rectSize.size.width * rectSize.size.height * bytesPerPixel;
         const bitmapHeapPtr = this.malloc(bitmapHeapLength);
         const bitmapPtr = this.pdfiumModule.FPDFBitmap_CreateEx(rectSize.size.width, rectSize.size.height, format, bitmapHeapPtr, rectSize.size.width * bytesPerPixel);
         this.pdfiumModule.FPDFBitmap_FillRect(bitmapPtr, 0, 0, rectSize.size.width, rectSize.size.height, 0xffffffff);
-        let flags = RenderFlag.REVERSE_BYTE_ORDER;
+        let flags = exports.RenderFlag.REVERSE_BYTE_ORDER;
         if (options?.withAnnotations) {
-            flags = flags | RenderFlag.ANNOT;
+            flags = flags | exports.RenderFlag.ANNOT;
         }
         const pageCtx = ctx.acquirePage(page.index);
         this.pdfiumModule.FPDF_RenderPageBitmap(bitmapPtr, pageCtx.pagePtr, -rectSize.origin.x, -rectSize.origin.y, pageSize.width, pageSize.height, rotation, flags);
@@ -3852,57 +3854,57 @@ class PdfiumEngine {
         const actionType = this.pdfiumModule.FPDFAction_GetType(actionPtr);
         let action;
         switch (actionType) {
-            case PdfActionType.Unsupported:
+            case models.PdfActionType.Unsupported:
                 action = {
-                    type: PdfActionType.Unsupported,
+                    type: models.PdfActionType.Unsupported,
                 };
                 break;
-            case PdfActionType.Goto:
+            case models.PdfActionType.Goto:
                 {
                     const destinationPtr = this.pdfiumModule.FPDFAction_GetDest(docPtr, actionPtr);
                     if (destinationPtr) {
                         const destination = this.readPdfDestination(docPtr, destinationPtr);
                         action = {
-                            type: PdfActionType.Goto,
+                            type: models.PdfActionType.Goto,
                             destination,
                         };
                     }
                     else {
                         action = {
-                            type: PdfActionType.Unsupported,
+                            type: models.PdfActionType.Unsupported,
                         };
                     }
                 }
                 break;
-            case PdfActionType.RemoteGoto:
+            case models.PdfActionType.RemoteGoto:
                 {
                     // In case of remote goto action,
                     // the application should first use FPDFAction_GetFilePath
                     // to get file path, then load that particular document,
                     // and use its document handle to call this
                     action = {
-                        type: PdfActionType.Unsupported,
+                        type: models.PdfActionType.Unsupported,
                     };
                 }
                 break;
-            case PdfActionType.URI:
+            case models.PdfActionType.URI:
                 {
                     const uri = readString(this.pdfiumModule.pdfium, (buffer, bufferLength) => {
                         return this.pdfiumModule.FPDFAction_GetURIPath(docPtr, actionPtr, buffer, bufferLength);
                     }, this.pdfiumModule.pdfium.UTF8ToString);
                     action = {
-                        type: PdfActionType.URI,
+                        type: models.PdfActionType.URI,
                         uri,
                     };
                 }
                 break;
-            case PdfActionType.LaunchAppOrOpenFile:
+            case models.PdfActionType.LaunchAppOrOpenFile:
                 {
                     const path = readString(this.pdfiumModule.pdfium, (buffer, bufferLength) => {
                         return this.pdfiumModule.FPDFAction_GetFilePath(actionPtr, buffer, bufferLength);
                     }, this.pdfiumModule.pdfium.UTF8ToString);
                     action = {
-                        type: PdfActionType.LaunchAppOrOpenFile,
+                        type: models.PdfActionType.LaunchAppOrOpenFile,
                         path,
                     };
                 }
@@ -3933,7 +3935,7 @@ class PdfiumEngine {
         }
         this.free(paramsCountPtr);
         this.free(paramsPtr);
-        if (zoomMode === PdfZoomMode.XYZ) {
+        if (zoomMode === models.PdfZoomMode.XYZ) {
             const hasXPtr = this.malloc(1);
             const hasYPtr = this.malloc(1);
             const hasZPtr = this.malloc(1);
@@ -4082,9 +4084,9 @@ class PdfiumEngine {
      */
     readPageAnnoAppearanceStreams(annotationPtr) {
         return {
-            normal: this.readPageAnnoAppearanceStream(annotationPtr, AppearanceMode.Normal),
-            rollover: this.readPageAnnoAppearanceStream(annotationPtr, AppearanceMode.Rollover),
-            down: this.readPageAnnoAppearanceStream(annotationPtr, AppearanceMode.Down),
+            normal: this.readPageAnnoAppearanceStream(annotationPtr, models.AppearanceMode.Normal),
+            rollover: this.readPageAnnoAppearanceStream(annotationPtr, models.AppearanceMode.Rollover),
+            down: this.readPageAnnoAppearanceStream(annotationPtr, models.AppearanceMode.Down),
         };
     }
     /**
@@ -4095,7 +4097,7 @@ class PdfiumEngine {
      *
      * @private
      */
-    readPageAnnoAppearanceStream(annotationPtr, mode = AppearanceMode.Normal) {
+    readPageAnnoAppearanceStream(annotationPtr, mode = models.AppearanceMode.Normal) {
         const utf16Length = this.pdfiumModule.FPDFAnnot_GetAP(annotationPtr, mode, 0, 0);
         const bytesCount = (utf16Length + 1) * 2; // include NIL
         const bufferPtr = this.malloc(bytesCount);
@@ -4123,7 +4125,7 @@ class PdfiumEngine {
     updateAnnotationColor(doc, page, annotation, color, which = 0) {
         this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', doc, page, annotation, color, which);
         this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'Begin', doc.id);
-        const task = PdfTaskHelper.create();
+        const task = models.PdfTaskHelper.create();
         try {
             /* 1 ── sanity & native handles ────────────────────────────────────────── */
             const ctx = this.cache.getContext(doc.id);
@@ -4156,7 +4158,7 @@ class PdfiumEngine {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'End', doc.id);
             this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor: error', error);
             task.reject({
-                code: PdfErrorCode.Unknown,
+                code: models.PdfErrorCode.Unknown,
                 message: `Failed to set annotation color: ${error instanceof Error ? error.message : String(error)}`,
             });
         }
@@ -4289,17 +4291,17 @@ class PdfiumEngine {
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SearchAllPages`, 'End', doc.id);
-            return PdfTaskHelper.resolve({ results: [], total: 0 });
+            return models.PdfTaskHelper.resolve({ results: [], total: 0 });
         }
         const length = 2 * (keyword.length + 1);
         const keywordPtr = this.malloc(length);
         this.pdfiumModule.pdfium.stringToUTF16(keyword, keywordPtr, length);
         const flag = flags.reduce((flag, currFlag) => {
             return flag | currFlag;
-        }, MatchFlag.None);
+        }, models.MatchFlag.None);
         const results = [];
         // Search through all pages
-        const searchAllPagesTask = PdfTaskHelper.create();
+        const searchAllPagesTask = models.PdfTaskHelper.create();
         // Execute search in a separate function to avoid issues with resolve parameter
         const executeSearch = async () => {
             for (let pageIndex = 0; pageIndex < doc.pageCount; pageIndex++) {
@@ -4319,7 +4321,7 @@ class PdfiumEngine {
             this.free(keywordPtr);
             this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SearchAllPages`, 'End', doc.id);
             searchAllPagesTask.reject({
-                code: PdfErrorCode.Unknown,
+                code: models.PdfErrorCode.Unknown,
                 message: `Error searching document: ${error}`,
             });
         });
@@ -4460,7 +4462,7 @@ class EngineRunner {
      * Create instance of EngineRunnder
      * @param logger - logger instance
      */
-    constructor(logger = new NoopLogger()) {
+    constructor(logger = new models.NoopLogger()) {
         this.logger = logger;
         /**
          * Execute the request
@@ -4475,7 +4477,7 @@ class EngineRunner {
                 const error = {
                     type: 'reject',
                     reason: {
-                        code: PdfErrorCode.NotReady,
+                        code: models.PdfErrorCode.NotReady,
                         message: 'engine has not started yet',
                     },
                 };
@@ -4496,7 +4498,7 @@ class EngineRunner {
                 const error = {
                     type: 'reject',
                     reason: {
-                        code: PdfErrorCode.NotSupport,
+                        code: models.PdfErrorCode.NotSupport,
                         message: `engine method ${name} is not supported yet`,
                     },
                 };
@@ -4713,7 +4715,7 @@ class PdfiumEngineRunner extends EngineRunner {
      */
     async prepare() {
         const wasmBinary = this.wasmBinary;
-        const wasmModule = await init({ wasmBinary });
+        const wasmModule = await pdfium.init({ wasmBinary });
         this.engine = new PdfiumEngine(wasmModule);
         this.ready();
     }
@@ -4724,7 +4726,7 @@ const LOG_CATEGORY = 'Engine';
 /**
  * Task that executed by webworker
  */
-class WorkerTask extends Task {
+class WorkerTask extends models.Task {
     /**
      * Create a task that bind to web worker with specified message id
      * @param worker - web worker instance
@@ -4764,7 +4766,7 @@ class WebWorkerEngine {
      *
      * @public
      */
-    constructor(worker, logger = new NoopLogger()) {
+    constructor(worker, logger = new models.NoopLogger()) {
         this.worker = worker;
         this.logger = logger;
         /**
@@ -5543,7 +5545,7 @@ class WebWorkerEngine {
         }, () => {
             this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `${request.data.name}`, 'End', request.id);
             task.reject({
-                code: PdfErrorCode.Initialization,
+                code: models.PdfErrorCode.Initialization,
                 message: 'worker initialization failed',
             });
         });
@@ -5561,16 +5563,16 @@ WebWorkerEngine.readyTaskId = '0';
 function createMockPdfEngine(partialEngine) {
     const engine = {
         openDocumentUrl: jest.fn((file, options) => {
-            return PdfTaskHelper.create();
+            return models.PdfTaskHelper.create();
         }),
         openDocumentFromBuffer: jest.fn((file, password) => {
-            return PdfTaskHelper.create();
+            return models.PdfTaskHelper.create();
         }),
         openDocumentFromLoader: jest.fn((file, password) => {
-            return PdfTaskHelper.create();
+            return models.PdfTaskHelper.create();
         }),
         getMetadata: () => {
-            return PdfTaskHelper.resolve({
+            return models.PdfTaskHelper.resolve({
                 title: 'title',
                 author: 'author',
                 subject: 'subject',
@@ -5582,17 +5584,17 @@ function createMockPdfEngine(partialEngine) {
             });
         },
         getDocPermissions: (doc) => {
-            return PdfTaskHelper.resolve(0xffffffff);
+            return models.PdfTaskHelper.resolve(0xffffffff);
         },
         getDocUserPermissions: (doc) => {
-            return PdfTaskHelper.resolve(0xffffffff);
+            return models.PdfTaskHelper.resolve(0xffffffff);
         },
         getSignatures: (doc) => {
             const signatures = [];
-            return PdfTaskHelper.resolve(signatures);
+            return models.PdfTaskHelper.resolve(signatures);
         },
         updateAnnotationColor: (doc, page, annotation, color, which = 0) => {
-            return PdfTaskHelper.resolve(true);
+            return models.PdfTaskHelper.resolve(true);
         },
         getBookmarks: (doc) => {
             const bookmarks = [];
@@ -5603,7 +5605,7 @@ function createMockPdfEngine(partialEngine) {
                     destination: {
                         pageIndex: 1,
                         zoom: {
-                            mode: PdfZoomMode.FitPage,
+                            mode: models.PdfZoomMode.FitPage,
                         },
                         view: [],
                     },
@@ -5615,7 +5617,7 @@ function createMockPdfEngine(partialEngine) {
                     destination: {
                         pageIndex: 2,
                         zoom: {
-                            mode: PdfZoomMode.FitPage,
+                            mode: models.PdfZoomMode.FitPage,
                         },
                         view: [],
                     },
@@ -5628,7 +5630,7 @@ function createMockPdfEngine(partialEngine) {
                             destination: {
                                 pageIndex: 3,
                                 zoom: {
-                                    mode: PdfZoomMode.FitPage,
+                                    mode: models.PdfZoomMode.FitPage,
                                 },
                                 view: [],
                             },
@@ -5636,12 +5638,12 @@ function createMockPdfEngine(partialEngine) {
                     },
                 ],
             });
-            return PdfTaskHelper.resolve({
+            return models.PdfTaskHelper.resolve({
                 bookmarks,
             });
         },
         renderPage: jest.fn((doc, page, scaleFactor, rotation, dpr, options) => {
-            const pageSize = rotation % 2 === 0 ? page.size : swap(page.size);
+            const pageSize = rotation % 2 === 0 ? page.size : models.swap(page.size);
             const imageSize = {
                 width: Math.ceil(pageSize.width * scaleFactor),
                 height: Math.ceil(pageSize.height * scaleFactor),
@@ -5660,10 +5662,10 @@ function createMockPdfEngine(partialEngine) {
             const ab = array.buffer;
             const realBuffer = ab instanceof ArrayBuffer ? ab : new Uint8Array(array).buffer;
             const blob = new Blob([realBuffer], { type: 'application/octet-stream' });
-            return PdfTaskHelper.resolve(blob);
+            return models.PdfTaskHelper.resolve(blob);
         }),
         renderPageRect: jest.fn((doc, page, scaleFactor, rotation, dpr, rect, options) => {
-            const pageSize = rotation % 2 === 0 ? page.size : swap(page.size);
+            const pageSize = rotation % 2 === 0 ? page.size : models.swap(page.size);
             const imageSize = {
                 width: Math.ceil(pageSize.width * scaleFactor),
                 height: Math.ceil(pageSize.height * scaleFactor),
@@ -5682,7 +5684,7 @@ function createMockPdfEngine(partialEngine) {
             const ab = array.buffer;
             const realBuffer = ab instanceof ArrayBuffer ? ab : new Uint8Array(array).buffer;
             const blob = new Blob([realBuffer], { type: 'application/octet-stream' });
-            return PdfTaskHelper.resolve(blob);
+            return models.PdfTaskHelper.resolve(blob);
         }),
         renderThumbnail: jest.fn((doc, page) => {
             const thumbnailWidth = page.size.width / 4;
@@ -5701,23 +5703,23 @@ function createMockPdfEngine(partialEngine) {
             const ab = array.buffer;
             const realBuffer = ab instanceof ArrayBuffer ? ab : new Uint8Array(array).buffer;
             const blob = new Blob([realBuffer], { type: 'image/png' });
-            return PdfTaskHelper.resolve(blob);
+            return models.PdfTaskHelper.resolve(blob);
         }),
         renderAnnotation: jest.fn((doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType) => {
-            return PdfTaskHelper.resolve(new Blob([], { type: 'image/png' }));
+            return models.PdfTaskHelper.resolve(new Blob([], { type: 'image/png' }));
         }),
         getAllAnnotations: jest.fn((doc) => {
-            return PdfTaskHelper.resolve({});
+            return models.PdfTaskHelper.resolve({});
         }),
         getPageAnnotations: jest.fn((doc, page) => {
             const link = {
                 pageIndex: page.index,
                 id: page.index + 1,
-                type: PdfAnnotationSubtype.LINK,
+                type: models.PdfAnnotationSubtype.LINK,
                 target: {
                     type: 'action',
                     action: {
-                        type: PdfActionType.URI,
+                        type: models.PdfActionType.URI,
                         uri: 'https://localhost',
                     },
                 },
@@ -5735,16 +5737,16 @@ function createMockPdfEngine(partialEngine) {
             };
             const annotations = [];
             annotations.push(link);
-            return PdfTaskHelper.resolve(annotations);
+            return models.PdfTaskHelper.resolve(annotations);
         }),
         createPageAnnotation: jest.fn(() => {
-            return PdfTaskHelper.resolve(1);
+            return models.PdfTaskHelper.resolve(1);
         }),
         updatePageAnnotation: jest.fn(() => {
-            return PdfTaskHelper.resolve(true);
+            return models.PdfTaskHelper.resolve(true);
         }),
         removePageAnnotation: jest.fn(() => {
-            return PdfTaskHelper.resolve(true);
+            return models.PdfTaskHelper.resolve(true);
         }),
         getPageTextRects: jest.fn((doc, page, scaleFactor, rotation) => {
             const textRects = [
@@ -5766,42 +5768,42 @@ function createMockPdfEngine(partialEngine) {
                     },
                 },
             ];
-            return PdfTaskHelper.resolve(textRects);
+            return models.PdfTaskHelper.resolve(textRects);
         }),
         closeDocument: (pdf) => {
-            return PdfTaskHelper.resolve(true);
+            return models.PdfTaskHelper.resolve(true);
         },
         saveAsCopy: (pdf) => {
-            return PdfTaskHelper.resolve(new ArrayBuffer(0));
+            return models.PdfTaskHelper.resolve(new ArrayBuffer(0));
         },
         flattenPage: (pdf, page, flag) => {
-            return PdfTaskHelper.resolve(PdfPageFlattenResult.Success);
+            return models.PdfTaskHelper.resolve(models.PdfPageFlattenResult.Success);
         },
         extractPages: (pdf, pageIndexes) => {
-            return PdfTaskHelper.resolve(new ArrayBuffer(0));
+            return models.PdfTaskHelper.resolve(new ArrayBuffer(0));
         },
         extractText: (pdf, pageIndexes) => {
-            return PdfTaskHelper.resolve('');
+            return models.PdfTaskHelper.resolve('');
         },
         getTextSlices: (doc, slices) => {
-            return PdfTaskHelper.resolve([]);
+            return models.PdfTaskHelper.resolve([]);
         },
         getPageGlyphs: (doc, page) => {
-            return PdfTaskHelper.resolve([]);
+            return models.PdfTaskHelper.resolve([]);
         },
         getPageGeometry: (doc, page) => {
-            return PdfTaskHelper.resolve({
+            return models.PdfTaskHelper.resolve({
                 runs: [],
             });
         },
         merge: (files) => {
-            return PdfTaskHelper.resolve({
+            return models.PdfTaskHelper.resolve({
                 id: 'id',
                 content: new ArrayBuffer(0),
             });
         },
         mergePages: (mergeConfigs) => {
-            return PdfTaskHelper.resolve({
+            return models.PdfTaskHelper.resolve({
                 id: 'id',
                 content: new ArrayBuffer(0),
             });
@@ -5833,19 +5835,19 @@ function createMockPdfEngine(partialEngine) {
                 },
             };
             // Return a mock SearchAllPagesResult with a single result
-            return PdfTaskHelper.resolve({
+            return models.PdfTaskHelper.resolve({
                 results: [mockResult],
                 total: 1,
             });
         },
         getAttachments: (doc) => {
-            return PdfTaskHelper.resolve([]);
+            return models.PdfTaskHelper.resolve([]);
         },
         readAttachmentContent: (doc, attachment) => {
-            return PdfTaskHelper.resolve(new ArrayBuffer(0));
+            return models.PdfTaskHelper.resolve(new ArrayBuffer(0));
         },
         setFormFieldValue: (doc, page, annotation, text) => {
-            return PdfTaskHelper.resolve(true);
+            return models.PdfTaskHelper.resolve(true);
         },
         ...partialEngine,
     };
@@ -5893,5 +5895,15 @@ function createMockPdfFile(file) {
     };
 }
 
-export { BitmapFormat, EngineRunner, PdfiumEngine, PdfiumEngineRunner, PdfiumErrorCode, RenderFlag, WebWorkerEngine, WorkerTask, browserImageDataToBlobConverter, createMockPdfDocument, createMockPdfEngine, createMockPdfFile, readArrayBuffer, readString };
-//# sourceMappingURL=index.js.map
+exports.EngineRunner = EngineRunner;
+exports.PdfiumEngine = PdfiumEngine;
+exports.PdfiumEngineRunner = PdfiumEngineRunner;
+exports.WebWorkerEngine = WebWorkerEngine;
+exports.WorkerTask = WorkerTask;
+exports.browserImageDataToBlobConverter = browserImageDataToBlobConverter;
+exports.createMockPdfDocument = createMockPdfDocument;
+exports.createMockPdfEngine = createMockPdfEngine;
+exports.createMockPdfFile = createMockPdfFile;
+exports.readArrayBuffer = readArrayBuffer;
+exports.readString = readString;
+//# sourceMappingURL=index.cjs.map

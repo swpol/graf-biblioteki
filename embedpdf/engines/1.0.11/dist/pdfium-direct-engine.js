@@ -1,5 +1,5 @@
-import { NoopLogger, PdfTaskHelper, PdfErrorCode, Task, Rotation, PdfAnnotationSubtype, stripPdfUnwantedMarkers, PdfAnnotationBorderStyle, dateToPdfDate, PdfAnnotationColorType, PdfPageObjectType, pdfAlphaColorToWebAlphaColor, webAlphaColorToPdfAlphaColor, quadToRect, pdfDateToDate, flagsToNames, PDF_FORM_FIELD_TYPE, toIntRect, transformRect, makeMatrix, AppearanceMode, toIntSize, transformSize, PdfActionType, PdfZoomMode, MatchFlag, rectToQuad, swap, PdfPageFlattenResult } from '@embedpdf/models';
 import { init } from '@embedpdf/pdfium';
+import { NoopLogger, PdfTaskHelper, PdfErrorCode, Task, Rotation, PdfAnnotationSubtype, stripPdfUnwantedMarkers, PdfAnnotationBorderStyle, dateToPdfDate, PdfAnnotationColorType, PdfPageObjectType, pdfAlphaColorToWebAlphaColor, webAlphaColorToPdfAlphaColor, quadToRect, pdfDateToDate, flagsToNames, PDF_FORM_FIELD_TYPE, toIntRect, transformRect, makeMatrix, AppearanceMode, toIntSize, transformSize, PdfActionType, PdfZoomMode, MatchFlag, rectToQuad } from '@embedpdf/models';
 
 /**
  * Read string from WASM heap
@@ -248,8 +248,8 @@ var RenderFlag;
     RenderFlag[RenderFlag["PRINTING"] = 2048] = "PRINTING";
     RenderFlag[RenderFlag["REVERSE_BYTE_ORDER"] = 16] = "REVERSE_BYTE_ORDER";
 })(RenderFlag || (RenderFlag = {}));
-const LOG_SOURCE$2 = 'PDFiumEngine';
-const LOG_CATEGORY$2 = 'Engine';
+const LOG_SOURCE = 'PDFiumEngine';
+const LOG_CATEGORY = 'Engine';
 /**
  * Error code of pdfium library
  */
@@ -299,10 +299,10 @@ class PdfiumEngine {
      * @public
      */
     initialize() {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'initialize');
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Initialize`, 'Begin', 'General');
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'initialize');
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Initialize`, 'Begin', 'General');
         this.pdfiumModule.PDFiumExt_Init();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Initialize`, 'End', 'General');
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Initialize`, 'End', 'General');
         return PdfTaskHelper.resolve(true);
     }
     /**
@@ -311,10 +311,10 @@ class PdfiumEngine {
      * @public
      */
     destroy() {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'destroy');
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Destroy`, 'Begin', 'General');
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'destroy');
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Destroy`, 'Begin', 'General');
         this.pdfiumModule.FPDF_DestroyLibrary();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Destroy`, 'End', 'General');
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Destroy`, 'End', 'General');
         return PdfTaskHelper.resolve(true);
     }
     /**
@@ -325,7 +325,7 @@ class PdfiumEngine {
     openDocumentUrl(file, options) {
         const mode = options?.mode ?? 'auto';
         const password = options?.password ?? '';
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentUrl called', file.url, mode);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentUrl called', file.url, mode);
         // We'll create a task to wrap asynchronous steps
         const task = PdfTaskHelper.create();
         // Start an async procedure
@@ -359,7 +359,7 @@ class PdfiumEngine {
                 }
             }
             catch (err) {
-                this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentUrl error', err);
+                this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'openDocumentUrl error', err);
                 task.reject({
                     code: PdfErrorCode.Unknown,
                     message: String(err),
@@ -374,7 +374,7 @@ class PdfiumEngine {
      */
     async checkRangeSupport(url) {
         try {
-            this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'checkRangeSupport', url);
+            this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'checkRangeSupport', url);
             // First try HEAD request
             const headResponse = await fetch(url, { method: 'HEAD' });
             const fileLength = headResponse.headers.get('Content-Length');
@@ -409,7 +409,7 @@ class PdfiumEngine {
             };
         }
         catch (e) {
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'checkRangeSupport failed', e);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'checkRangeSupport failed', e);
             throw new Error('Failed to check range support: ' + e);
         }
     }
@@ -418,7 +418,7 @@ class PdfiumEngine {
      * then call openDocumentFromBuffer.
      */
     async fetchFullAndOpen(file, password) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'fetchFullAndOpen', file.url);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'fetchFullAndOpen', file.url);
         // 1. fetch entire PDF as array buffer
         const response = await fetch(file.url);
         if (!response.ok) {
@@ -441,7 +441,7 @@ class PdfiumEngine {
      *   the desired byte ranges.
      */
     async openDocumentWithRangeRequest(file, password, knownFileLength) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentWithRangeRequest', file.url);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentWithRangeRequest', file.url);
         // We first do a HEAD or a partial fetch to get the fileLength:
         const fileLength = knownFileLength ?? (await this.retrieveFileLength(file.url)).fileLength;
         // 2. define the callback function used by openDocumentFromLoader
@@ -468,7 +468,7 @@ class PdfiumEngine {
      * Helper to do a HEAD request or partial GET to find file length.
      */
     async retrieveFileLength(url) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'retrieveFileLength', url);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'retrieveFileLength', url);
         // We'll do a HEAD request to get Content-Length
         const resp = await fetch(url, { method: 'HEAD' });
         if (!resp.ok) {
@@ -499,8 +499,8 @@ class PdfiumEngine {
      * @public
      */
     openDocumentFromBuffer(file, password = '') {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentFromBuffer', file, password);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'Begin', file.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentFromBuffer', file, password);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromBuffer`, 'Begin', file.id);
         const array = new Uint8Array(file.content);
         const length = array.length;
         const filePtr = this.malloc(length);
@@ -508,9 +508,9 @@ class PdfiumEngine {
         const docPtr = this.pdfiumModule.FPDF_LoadMemDocument(filePtr, length, password);
         if (!docPtr) {
             const lastError = this.pdfiumModule.FPDF_GetLastError();
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_LoadMemDocument failed with ${lastError}`);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDF_LoadMemDocument failed with ${lastError}`);
             this.free(filePtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'End', file.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromBuffer`, 'End', file.id);
             return PdfTaskHelper.reject({
                 code: lastError,
                 message: `FPDF_LoadMemDocument failed`,
@@ -523,11 +523,11 @@ class PdfiumEngine {
             const result = this.pdfiumModule.FPDF_GetPageSizeByIndexF(docPtr, index, sizePtr);
             if (!result) {
                 const lastError = this.pdfiumModule.FPDF_GetLastError();
-                this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_GetPageSizeByIndexF failed with ${lastError}`);
+                this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDF_GetPageSizeByIndexF failed with ${lastError}`);
                 this.free(sizePtr);
                 this.pdfiumModule.FPDF_CloseDocument(docPtr);
                 this.free(filePtr);
-                this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'End', file.id);
+                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromBuffer`, 'End', file.id);
                 return PdfTaskHelper.reject({
                     code: lastError,
                     message: `FPDF_GetPageSizeByIndexF failed`,
@@ -549,7 +549,7 @@ class PdfiumEngine {
             pages,
         };
         this.cache.setDocument(file.id, filePtr, docPtr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromBuffer`, 'End', file.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromBuffer`, 'End', file.id);
         return PdfTaskHelper.resolve(pdfDoc);
     }
     /**
@@ -559,16 +559,16 @@ class PdfiumEngine {
      */
     openDocumentFromLoader(fileLoader, password = '') {
         const { fileLength, callback, ...file } = fileLoader;
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'openDocumentFromLoader', file, password);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'Begin', file.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentFromLoader', file, password);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromLoader`, 'Begin', file.id);
         const readBlock = (_pThis, // Pointer to the FPDF_FILEACCESS structure
         offset, // Pointer to a buffer to receive the data
         pBuf, // Offset position from the beginning of the file
         length) => {
             try {
-                this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'readBlock', offset, length, pBuf);
+                this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'readBlock', offset, length, pBuf);
                 if (offset < 0 || offset >= fileLength) {
-                    this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'Offset out of bounds:', offset);
+                    this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'Offset out of bounds:', offset);
                     return 0;
                 }
                 // Get data chunk using the callback
@@ -579,7 +579,7 @@ class PdfiumEngine {
                 return data.length;
             }
             catch (error) {
-                this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'ReadBlock error:', error);
+                this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'ReadBlock error:', error);
                 return 0;
             }
         };
@@ -595,9 +595,9 @@ class PdfiumEngine {
         const docPtr = this.pdfiumModule.FPDF_LoadCustomDocument(fileAccessPtr, password);
         if (!docPtr) {
             const lastError = this.pdfiumModule.FPDF_GetLastError();
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_LoadCustomDocument failed with ${lastError}`);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDF_LoadCustomDocument failed with ${lastError}`);
             this.free(fileAccessPtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'End', file.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromLoader`, 'End', file.id);
             return PdfTaskHelper.reject({
                 code: lastError,
                 message: `FPDF_LoadCustomDocument failed`,
@@ -610,11 +610,11 @@ class PdfiumEngine {
             const result = this.pdfiumModule.FPDF_GetPageSizeByIndexF(docPtr, index, sizePtr);
             if (!result) {
                 const lastError = this.pdfiumModule.FPDF_GetLastError();
-                this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_GetPageSizeByIndexF failed with ${lastError}`);
+                this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDF_GetPageSizeByIndexF failed with ${lastError}`);
                 this.free(sizePtr);
                 this.pdfiumModule.FPDF_CloseDocument(docPtr);
                 this.free(fileAccessPtr);
-                this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'End', file.id);
+                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromLoader`, 'End', file.id);
                 return PdfTaskHelper.reject({
                     code: lastError,
                     message: `FPDF_GetPageSizeByIndexF failed`,
@@ -636,7 +636,7 @@ class PdfiumEngine {
             pages,
         };
         this.cache.setDocument(file.id, fileAccessPtr, docPtr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `OpenDocumentFromLoader`, 'End', file.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `OpenDocumentFromLoader`, 'End', file.id);
         return PdfTaskHelper.resolve(pdfDoc);
     }
     /**
@@ -645,11 +645,11 @@ class PdfiumEngine {
      * @public
      */
     getMetadata(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getMetadata', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetMetadata`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getMetadata', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetMetadata`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetMetadata`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetMetadata`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -665,7 +665,7 @@ class PdfiumEngine {
             creationDate: this.readMetaText(ctx.docPtr, 'CreationDate'),
             modificationDate: this.readMetaText(ctx.docPtr, 'ModDate'),
         };
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetMetadata`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetMetadata`, 'End', doc.id);
         return PdfTaskHelper.resolve(metadata);
     }
     /**
@@ -674,11 +674,11 @@ class PdfiumEngine {
      * @public
      */
     getDocPermissions(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getDocPermissions', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getDocPermissions`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getDocPermissions', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `getDocPermissions`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getDocPermissions`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `getDocPermissions`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -693,11 +693,11 @@ class PdfiumEngine {
      * @public
      */
     getDocUserPermissions(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getDocUserPermissions', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getDocUserPermissions`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getDocUserPermissions', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `getDocUserPermissions`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getDocUserPermissions`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `getDocUserPermissions`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -712,11 +712,11 @@ class PdfiumEngine {
      * @public
      */
     getSignatures(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getSignatures', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetSignatures`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getSignatures', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetSignatures`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetSignatures`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetSignatures`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -751,7 +751,7 @@ class PdfiumEngine {
                 docMDP,
             });
         }
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetSignatures`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetSignatures`, 'End', doc.id);
         return PdfTaskHelper.resolve(signatures);
     }
     /**
@@ -760,18 +760,18 @@ class PdfiumEngine {
      * @public
      */
     getBookmarks(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getBookmarks', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetBookmarks`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getBookmarks', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetBookmarks`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `getBookmarks`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `getBookmarks`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const bookmarks = this.readPdfBookmarks(ctx.docPtr, 0);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetBookmarks`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetBookmarks`, 'End', doc.id);
         return PdfTaskHelper.resolve({
             bookmarks,
         });
@@ -783,11 +783,11 @@ class PdfiumEngine {
      */
     renderPage(doc, page, scaleFactor = 1, rotation = Rotation.Degree0, dpr = 1, options = { withAnnotations: false }, imageType = 'image/webp') {
         const task = new Task();
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderPage', doc, page, scaleFactor, rotation, dpr, options);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPage`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderPage', doc, page, scaleFactor, rotation, dpr, options);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderPage`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPage`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderPage`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -797,7 +797,7 @@ class PdfiumEngine {
             origin: { x: 0, y: 0 },
             size: page.size,
         }, scaleFactor, rotation, dpr, options);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPage`, 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderPage`, 'End', `${doc.id}-${page.index}`);
         this.imageDataConverter(imageData, imageType).then((blob) => task.resolve(blob));
         return task;
     }
@@ -808,18 +808,18 @@ class PdfiumEngine {
      */
     renderPageRect(doc, page, scaleFactor, rotation, dpr, rect, options, imageType = 'image/webp') {
         const task = new Task();
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderPageRect', doc, page, scaleFactor, rotation, dpr, rect, options);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPageRect`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderPageRect', doc, page, scaleFactor, rotation, dpr, rect, options);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderPageRect`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPageRect`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderPageRect`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const imageData = this.renderPageRectToImageData(ctx, page, rect, scaleFactor, rotation, dpr, options);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderPageRect`, 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderPageRect`, 'End', `${doc.id}-${page.index}`);
         this.imageDataConverter(imageData, imageType).then((blob) => task.resolve(blob));
         return task;
     }
@@ -829,18 +829,18 @@ class PdfiumEngine {
      * @public
      */
     getAllAnnotations(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getAllAnnotations', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAllAnnotations`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getAllAnnotations', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetAllAnnotations`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAllAnnotations`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetAllAnnotations`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const annotations = this.readAllAnnotations(doc, ctx);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAllAnnotations`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetAllAnnotations`, 'End', doc.id);
         return PdfTaskHelper.resolve(annotations);
     }
     readAllAnnotations(doc, ctx) {
@@ -857,19 +857,19 @@ class PdfiumEngine {
      * @public
      */
     getPageAnnotations(doc, page) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageAnnotations', doc, page);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageAnnotations', doc, page);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetPageAnnotations`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetPageAnnotations`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const annotations = this.readPageAnnotations(ctx, page);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, 'End', `${doc.id}-${page.index}`);
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageAnnotations`, `${doc.id}-${page.index}`, annotations);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetPageAnnotations`, 'End', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, `GetPageAnnotations`, `${doc.id}-${page.index}`, annotations);
         return PdfTaskHelper.resolve(annotations);
     }
     /**
@@ -878,11 +878,11 @@ class PdfiumEngine {
      * @public
      */
     createPageAnnotation(doc, page, annotation) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'createPageAnnotation', doc, page, annotation);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'createPageAnnotation', doc, page, annotation);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CreatePageAnnotation`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -891,7 +891,7 @@ class PdfiumEngine {
         const pageCtx = ctx.acquirePage(page.index);
         const annotationPtr = this.pdfiumModule.FPDFPage_CreateAnnot(pageCtx.pagePtr, annotation.type);
         if (!annotationPtr) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
             pageCtx.release();
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantCreateAnnot,
@@ -901,7 +901,7 @@ class PdfiumEngine {
         if (!this.setPageAnnoRect(page, pageCtx.pagePtr, annotationPtr, annotation.rect)) {
             this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
             pageCtx.release();
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantSetAnnotRect,
                 message: 'can not set the rect of the annotation',
@@ -925,7 +925,7 @@ class PdfiumEngine {
         if (!isSucceed) {
             this.pdfiumModule.FPDFPage_RemoveAnnot(pageCtx.pagePtr, annotationPtr);
             pageCtx.release();
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantSetAnnotContent,
                 message: 'can not add content of the annotation',
@@ -941,7 +941,7 @@ class PdfiumEngine {
         const annotId = this.pdfiumModule.FPDFPage_GetAnnotIndex(pageCtx.pagePtr, annotationPtr);
         this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CreatePageAnnotation`, 'End', `${doc.id}-${page.index}`);
         return annotId >= 0
             ? PdfTaskHelper.resolve(annotId)
             : PdfTaskHelper.reject({
@@ -959,11 +959,11 @@ class PdfiumEngine {
      * @returns PdfTask<boolean>  –  true on success
      */
     updatePageAnnotation(doc, page, annotation) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'updatePageAnnotation', doc, page, annotation);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'updatePageAnnotation', doc, page, annotation);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'UpdatePageAnnotation', 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -973,14 +973,14 @@ class PdfiumEngine {
         const annotPtr = this.pdfiumModule.FPDFPage_GetAnnot(pageCtx.pagePtr, annotation.id);
         if (!annotPtr) {
             pageCtx.release();
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: 'annotation not found' });
         }
         /* 1 ── (re)set bounding-box ────────────────────────────────────────────── */
         if (!this.setPageAnnoRect(page, pageCtx.pagePtr, annotPtr, annotation.rect)) {
             this.pdfiumModule.FPDFPage_CloseAnnot(annotPtr);
             pageCtx.release();
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantSetAnnotRect,
                 message: 'failed to move annotation',
@@ -1032,7 +1032,7 @@ class PdfiumEngine {
         /* 4 ── tidy-up native handles ──────────────────────────────────────────── */
         this.pdfiumModule.FPDFPage_CloseAnnot(annotPtr);
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'UpdatePageAnnotation', 'End', `${doc.id}-${page.index}`);
         return ok
             ? PdfTaskHelper.resolve(true)
             : PdfTaskHelper.reject({
@@ -1046,11 +1046,11 @@ class PdfiumEngine {
      * @public
      */
     removePageAnnotation(doc, page, annotation) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'removePageAnnotation', doc, page, annotation);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RemovePageAnnotation`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'removePageAnnotation', doc, page, annotation);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RemovePageAnnotation`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RemovePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RemovePageAnnotation`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1060,16 +1060,16 @@ class PdfiumEngine {
         let result = false;
         result = this.pdfiumModule.FPDFPage_RemoveAnnot(pageCtx.pagePtr, annotation.id);
         if (!result) {
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDFPage_RemoveAnnot Failed`, `${doc.id}-${page.index}`);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDFPage_RemoveAnnot Failed`, `${doc.id}-${page.index}`);
         }
         else {
             result = this.pdfiumModule.FPDFPage_GenerateContent(pageCtx.pagePtr);
             if (!result) {
-                this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDFPage_GenerateContent Failed`, `${doc.id}-${page.index}`);
+                this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDFPage_GenerateContent Failed`, `${doc.id}-${page.index}`);
             }
         }
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RemovePageAnnotation`, 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RemovePageAnnotation`, 'End', `${doc.id}-${page.index}`);
         return PdfTaskHelper.resolve(result);
     }
     /**
@@ -1078,11 +1078,11 @@ class PdfiumEngine {
      * @public
      */
     getPageTextRects(doc, page, scaleFactor, rotation) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageTextRects', doc, page, scaleFactor, rotation);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageTextRects`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageTextRects', doc, page, scaleFactor, rotation);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetPageTextRects`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageTextRects`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetPageTextRects`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1093,7 +1093,7 @@ class PdfiumEngine {
         const textRects = this.readPageTextRects(page, pageCtx.docPtr, pageCtx.pagePtr, textPagePtr);
         this.pdfiumModule.FPDFText_ClosePage(textPagePtr);
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetPageTextRects`, 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetPageTextRects`, 'End', `${doc.id}-${page.index}`);
         return PdfTaskHelper.resolve(textRects);
     }
     /**
@@ -1102,11 +1102,11 @@ class PdfiumEngine {
      * @public
      */
     renderThumbnail(doc, page, scaleFactor, rotation, dpr) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderThumbnail', doc, page, scaleFactor, rotation, dpr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderThumbnail`, 'Begin', `${doc.id}-${page.index}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderThumbnail', doc, page, scaleFactor, rotation, dpr);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderThumbnail`, 'Begin', `${doc.id}-${page.index}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderThumbnail`, 'End', `${doc.id}-${page.index}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderThumbnail`, 'End', `${doc.id}-${page.index}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1116,7 +1116,7 @@ class PdfiumEngine {
         const result = this.renderPage(doc, page, scaleFactor, rotation, dpr, {
             withAnnotations: true,
         });
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderThumbnail`, 'End', `${doc.id}-${page.index}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderThumbnail`, 'End', `${doc.id}-${page.index}`);
         return result;
     }
     /**
@@ -1125,11 +1125,11 @@ class PdfiumEngine {
      * @public
      */
     getAttachments(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getAttachments', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAttachments`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getAttachments', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetAttachments`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAttachments`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetAttachments`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1141,7 +1141,7 @@ class PdfiumEngine {
             const attachment = this.readPdfAttachment(ctx.docPtr, i);
             attachments.push(attachment);
         }
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `GetAttachments`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `GetAttachments`, 'End', doc.id);
         return PdfTaskHelper.resolve(attachments);
     }
     /**
@@ -1150,11 +1150,11 @@ class PdfiumEngine {
      * @public
      */
     readAttachmentContent(doc, attachment) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'readAttachmentContent', doc, attachment);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'readAttachmentContent', doc, attachment);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ReadAttachmentContent`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ReadAttachmentContent`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1164,7 +1164,7 @@ class PdfiumEngine {
         const sizePtr = this.malloc(8);
         if (!this.pdfiumModule.FPDFAttachment_GetFile(attachmentPtr, 0, 0, sizePtr)) {
             this.free(sizePtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ReadAttachmentContent`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantReadAttachmentSize,
                 message: 'can not read attachment size',
@@ -1175,7 +1175,7 @@ class PdfiumEngine {
         if (!this.pdfiumModule.FPDFAttachment_GetFile(attachmentPtr, contentPtr, size, sizePtr)) {
             this.free(sizePtr);
             this.free(contentPtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ReadAttachmentContent`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantReadAttachmentContent,
                 message: 'can not read attachment content',
@@ -1188,7 +1188,7 @@ class PdfiumEngine {
         }
         this.free(sizePtr);
         this.free(contentPtr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ReadAttachmentContent`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ReadAttachmentContent`, 'End', doc.id);
         return PdfTaskHelper.resolve(buffer);
     }
     /**
@@ -1197,12 +1197,12 @@ class PdfiumEngine {
      * @public
      */
     setFormFieldValue(doc, page, annotation, value) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', doc, annotation, value);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'Begin', `${doc.id}-${annotation.id}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'SetFormFieldValue', doc, annotation, value);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SetFormFieldValue`, 'Begin', `${doc.id}-${annotation.id}`);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', 'document is not opened');
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
+            this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'SetFormFieldValue', 'document is not opened');
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1214,8 +1214,8 @@ class PdfiumEngine {
         this.pdfiumModule.FORM_OnAfterLoadPage(pageCtx.pagePtr, formHandle);
         const annotationPtr = this.pdfiumModule.FPDFPage_GetAnnot(pageCtx.pagePtr, annotation.id);
         if (!this.pdfiumModule.FORM_SetFocusedAnnot(formHandle, annotationPtr)) {
-            this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', 'failed to set focused annotation');
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
+            this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'SetFormFieldValue', 'failed to set focused annotation');
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
             this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
             this.pdfiumModule.FORM_OnBeforeClosePage(pageCtx.pagePtr, formHandle);
             pageCtx.release();
@@ -1230,8 +1230,8 @@ class PdfiumEngine {
             case 'text':
                 {
                     if (!this.pdfiumModule.FORM_SelectAllText(formHandle, pageCtx.pagePtr)) {
-                        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', 'failed to select all text');
-                        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
+                        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'SetFormFieldValue', 'failed to select all text');
+                        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
                         this.pdfiumModule.FORM_ForceToKillFocus(formHandle);
                         this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
                         this.pdfiumModule.FORM_OnBeforeClosePage(pageCtx.pagePtr, formHandle);
@@ -1253,8 +1253,8 @@ class PdfiumEngine {
             case 'selection':
                 {
                     if (!this.pdfiumModule.FORM_SetIndexSelected(formHandle, pageCtx.pagePtr, value.index, value.isSelected)) {
-                        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', 'failed to set index selected');
-                        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
+                        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'SetFormFieldValue', 'failed to set index selected');
+                        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
                         this.pdfiumModule.FORM_ForceToKillFocus(formHandle);
                         this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
                         this.pdfiumModule.FORM_OnBeforeClosePage(pageCtx.pagePtr, formHandle);
@@ -1272,8 +1272,8 @@ class PdfiumEngine {
                 {
                     const kReturn = 0x0d;
                     if (!this.pdfiumModule.FORM_OnChar(formHandle, pageCtx.pagePtr, kReturn, 0)) {
-                        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'SetFormFieldValue', 'failed to set field checked');
-                        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
+                        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'SetFormFieldValue', 'failed to set field checked');
+                        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SetFormFieldValue`, 'End', `${doc.id}-${annotation.id}`);
                         this.pdfiumModule.FORM_ForceToKillFocus(formHandle);
                         this.pdfiumModule.FPDFPage_CloseAnnot(annotationPtr);
                         this.pdfiumModule.FORM_OnBeforeClosePage(pageCtx.pagePtr, formHandle);
@@ -1302,11 +1302,11 @@ class PdfiumEngine {
      * @public
      */
     flattenPage(doc, page, flag) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'flattenPage', doc, page, flag);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `flattenPage`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'flattenPage', doc, page, flag);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `flattenPage`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `flattenPage`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `flattenPage`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1315,7 +1315,7 @@ class PdfiumEngine {
         const pageCtx = ctx.acquirePage(page.index);
         const result = this.pdfiumModule.FPDFPage_Flatten(pageCtx.pagePtr, flag);
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `flattenPage`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `flattenPage`, 'End', doc.id);
         return PdfTaskHelper.resolve(result);
     }
     /**
@@ -1324,11 +1324,11 @@ class PdfiumEngine {
      * @public
      */
     extractPages(doc, pageIndexes) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'extractPages', doc, pageIndexes);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'extractPages', doc, pageIndexes);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractPages`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractPages`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1336,7 +1336,7 @@ class PdfiumEngine {
         }
         const newDocPtr = this.pdfiumModule.FPDF_CreateNewDocument();
         if (!newDocPtr) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractPages`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantCreateNewDoc,
                 message: 'can not create new document',
@@ -1348,7 +1348,7 @@ class PdfiumEngine {
         }
         if (!this.pdfiumModule.FPDF_ImportPagesByIndex(newDocPtr, ctx.docPtr, pageIndexesPtr, pageIndexes.length, 0)) {
             this.pdfiumModule.FPDF_CloseDocument(newDocPtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractPages`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantImportPages,
                 message: 'can not import pages to new document',
@@ -1356,7 +1356,7 @@ class PdfiumEngine {
         }
         const buffer = this.saveDocument(newDocPtr);
         this.pdfiumModule.FPDF_CloseDocument(newDocPtr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractPages`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractPages`, 'End', doc.id);
         return PdfTaskHelper.resolve(buffer);
     }
     /**
@@ -1365,11 +1365,11 @@ class PdfiumEngine {
      * @public
      */
     extractText(doc, pageIndexes) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'extractText', doc, pageIndexes);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractText`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'extractText', doc, pageIndexes);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractText`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractText`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractText`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1389,7 +1389,7 @@ class PdfiumEngine {
             pageCtx.release();
         }
         const text = strings.join('\n\n');
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `ExtractText`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `ExtractText`, 'End', doc.id);
         return PdfTaskHelper.resolve(text);
     }
     /**
@@ -1398,17 +1398,17 @@ class PdfiumEngine {
      * @public
      */
     getTextSlices(doc, slices) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getTextSlices', doc, slices);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getTextSlices', doc, slices);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'GetTextSlices', 'Begin', doc.id);
         /* ⚠︎ 1 — trivial case */
         if (slices.length === 0) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'GetTextSlices', 'End', doc.id);
             return PdfTaskHelper.resolve([]);
         }
         /* ⚠︎ 2 — document must be open */
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'GetTextSlices', 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -1436,12 +1436,12 @@ class PdfiumEngine {
                 }
                 pageCtx.release();
             }
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'GetTextSlices', 'End', doc.id);
             return PdfTaskHelper.resolve(out);
         }
         catch (e) {
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'getTextSlices error', e);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'GetTextSlices', 'End', doc.id);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'getTextSlices error', e);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'GetTextSlices', 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.Unknown,
                 message: String(e),
@@ -1454,12 +1454,12 @@ class PdfiumEngine {
      * @public
      */
     merge(files) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'merge', files);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'merge', files);
         const fileIds = files.map((file) => file.id).join('.');
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'Begin', fileIds);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Merge`, 'Begin', fileIds);
         const newDocPtr = this.pdfiumModule.FPDF_CreateNewDocument();
         if (!newDocPtr) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Merge`, 'End', fileIds);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantCreateNewDoc,
                 message: 'can not create new document',
@@ -1474,13 +1474,13 @@ class PdfiumEngine {
             const docPtr = this.pdfiumModule.FPDF_LoadMemDocument(filePtr, length, '');
             if (!docPtr) {
                 const lastError = this.pdfiumModule.FPDF_GetLastError();
-                this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, `FPDF_LoadMemDocument failed with ${lastError}`);
+                this.logger.error(LOG_SOURCE, LOG_CATEGORY, `FPDF_LoadMemDocument failed with ${lastError}`);
                 this.free(filePtr);
                 for (const ptr of ptrs) {
                     this.pdfiumModule.FPDF_CloseDocument(ptr.docPtr);
                     this.free(ptr.filePtr);
                 }
-                this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
+                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Merge`, 'End', fileIds);
                 return PdfTaskHelper.reject({
                     code: lastError,
                     message: `FPDF_LoadMemDocument failed`,
@@ -1493,7 +1493,7 @@ class PdfiumEngine {
                     this.pdfiumModule.FPDF_CloseDocument(ptr.docPtr);
                     this.free(ptr.filePtr);
                 }
-                this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
+                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Merge`, 'End', fileIds);
                 return PdfTaskHelper.reject({
                     code: PdfErrorCode.CantImportPages,
                     message: 'can not import pages to new document',
@@ -1510,7 +1510,7 @@ class PdfiumEngine {
             id: `${Math.random()}`,
             content: buffer,
         };
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `Merge`, 'End', fileIds);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `Merge`, 'End', fileIds);
         return PdfTaskHelper.resolve(file);
     }
     /**
@@ -1524,12 +1524,12 @@ class PdfiumEngine {
         const configIds = mergeConfigs
             .map((config) => `${config.docId}:${config.pageIndices.join(',')}`)
             .join('|');
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'mergePages', mergeConfigs);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'Begin', configIds);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'mergePages', mergeConfigs);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `MergePages`, 'Begin', configIds);
         // Create a new document to import pages into
         const newDocPtr = this.pdfiumModule.FPDF_CreateNewDocument();
         if (!newDocPtr) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'End', configIds);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `MergePages`, 'End', configIds);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantCreateNewDoc,
                 message: 'Cannot create new document',
@@ -1542,7 +1542,7 @@ class PdfiumEngine {
                 // Check if the document is open
                 const ctx = this.cache.getContext(config.docId);
                 if (!ctx) {
-                    this.logger.warn(LOG_SOURCE$2, LOG_CATEGORY$2, `Document ${config.docId} is not open, skipping`);
+                    this.logger.warn(LOG_SOURCE, LOG_CATEGORY, `Document ${config.docId} is not open, skipping`);
                     continue;
                 }
                 // Get the page count for this document
@@ -1569,12 +1569,12 @@ class PdfiumEngine {
                 id: `${Math.random()}`,
                 content: buffer,
             };
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'End', configIds);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `MergePages`, 'End', configIds);
             return PdfTaskHelper.resolve(file);
         }
         catch (error) {
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'mergePages failed', error);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `MergePages`, 'End', configIds);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'mergePages failed', error);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `MergePages`, 'End', configIds);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.CantImportPages,
                 message: error instanceof Error ? error.message : 'Failed to merge pages',
@@ -1593,18 +1593,18 @@ class PdfiumEngine {
      * @public
      */
     saveAsCopy(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'saveAsCopy', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SaveAsCopy`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'saveAsCopy', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SaveAsCopy`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SaveAsCopy`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SaveAsCopy`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         const buffer = this.saveDocument(ctx.docPtr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SaveAsCopy`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SaveAsCopy`, 'End', doc.id);
         return PdfTaskHelper.resolve(buffer);
     }
     /**
@@ -1613,18 +1613,18 @@ class PdfiumEngine {
      * @public
      */
     closeDocument(doc) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'closeDocument', doc);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CloseDocument`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'closeDocument', doc);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CloseDocument`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CloseDocument`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CloseDocument`, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
             });
         }
         ctx.dispose();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `CloseDocument`, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `CloseDocument`, 'End', doc.id);
         return PdfTaskHelper.resolve(true);
     }
     /**
@@ -1981,11 +1981,11 @@ class PdfiumEngine {
      */
     getPageGeometry(doc, page) {
         const label = 'getPageGeometry';
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, label, 'Begin', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, label, 'Begin', doc.id);
         /* ── guards ───────────────────────────────────────────── */
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, label, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, label, 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -2005,7 +2005,7 @@ class PdfiumEngine {
         const runs = this.buildRunsFromGlyphs(glyphs, textPagePtr);
         /* ── 3. cleanup & resolve task ───────────────────────── */
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, label, 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, label, 'End', doc.id);
         return PdfTaskHelper.resolve({ runs });
     }
     /**
@@ -2144,12 +2144,12 @@ class PdfiumEngine {
      * No Unicode is included; front-end decides whether to hydrate it.
      */
     getPageGlyphs(doc, page) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageGlyphs', doc, page);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageGlyphs', 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageGlyphs', doc, page);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'getPageGlyphs', 'Begin', doc.id);
         // ── 1) safety: document handle must be alive ───────────────
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageGlyphs', 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'getPageGlyphs', 'End', doc.id);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -2170,7 +2170,7 @@ class PdfiumEngine {
         }
         // ── 4) clean-up native handles ─────────────────────────────
         pageCtx.release();
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'getPageGlyphs', 'End', doc.id);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'getPageGlyphs', 'End', doc.id);
         return PdfTaskHelper.resolve(glyphs);
     }
     readCharBox(page, pagePtr, textPagePtr, charIndex) {
@@ -3704,12 +3704,12 @@ class PdfiumEngine {
      */
     renderAnnotation(doc, page, annotation, scaleFactor, rotation, dpr = 1, // device-pixel-ratio (canvas)
     mode = AppearanceMode.Normal, imageType = 'image/webp') {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'renderAnnotation', doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'Begin', `${doc.id}-${page.index}-${annotation.id}`);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderAnnotation', doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderAnnotation`, 'Begin', `${doc.id}-${page.index}-${annotation.id}`);
         const task = new Task();
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.DocNotOpen,
                 message: 'document does not open',
@@ -3720,7 +3720,7 @@ class PdfiumEngine {
         const annotPtr = this.pdfiumModule.FPDFPage_GetAnnot(pageCtx.pagePtr, annotation.id);
         if (!annotPtr) {
             pageCtx.release();
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.NotFound,
                 message: 'annotation not found',
@@ -3752,7 +3752,7 @@ class PdfiumEngine {
         pageCtx.release();
         if (!ok) {
             this.free(bitmapHeapPtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
             return PdfTaskHelper.reject({
                 code: PdfErrorCode.Unknown,
                 message: 'EPDF_RenderAnnotBitmap failed',
@@ -3766,7 +3766,7 @@ class PdfiumEngine {
             height: bitmapRect.size.height,
         };
         this.free(bitmapHeapPtr);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `RenderAnnotation`, 'End', `${doc.id}-${page.index}-${annotation.id}`);
         this.imageDataConverter(imageData, imageType)
             .then((blob) => task.resolve(blob))
             .catch((err) => task.reject({ code: PdfErrorCode.Unknown, message: String(err) }));
@@ -4121,23 +4121,23 @@ class PdfiumEngine {
      * @returns `true` when the operation succeeded
      */
     updateAnnotationColor(doc, page, annotation, color, which = 0) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', doc, page, annotation, color, which);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', doc, page, annotation, color, which);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', 'Begin', doc.id);
         const task = PdfTaskHelper.create();
         try {
             /* 1 ── sanity & native handles ────────────────────────────────────────── */
             const ctx = this.cache.getContext(doc.id);
             if (!ctx) {
-                this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'End', doc.id);
-                this.logger.warn(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor: doc closed');
+                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', 'End', doc.id);
+                this.logger.warn(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor: doc closed');
                 task.resolve(false);
                 return task;
             }
             const pageCtx = ctx.acquirePage(page.index);
             const annotPtr = this.pdfiumModule.FPDFPage_GetAnnot(pageCtx.pagePtr, annotation.id);
             if (!annotPtr) {
-                this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'End', doc.id);
-                this.logger.warn(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor: annot not found');
+                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', 'End', doc.id);
+                this.logger.warn(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor: annot not found');
                 pageCtx.release();
                 task.resolve(false);
                 return task;
@@ -4149,12 +4149,12 @@ class PdfiumEngine {
             }
             this.pdfiumModule.FPDFPage_CloseAnnot(annotPtr);
             pageCtx.release();
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', 'End', doc.id);
             task.resolve(!!ok);
         }
         catch (error) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor', 'End', doc.id);
-            this.logger.error(LOG_SOURCE$2, LOG_CATEGORY$2, 'setAnnotationColor: error', error);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', 'End', doc.id);
+            this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor: error', error);
             task.reject({
                 code: PdfErrorCode.Unknown,
                 message: `Failed to set annotation color: ${error instanceof Error ? error.message : String(error)}`,
@@ -4284,11 +4284,11 @@ class PdfiumEngine {
      * @public
      */
     searchAllPages(doc, keyword, flags = []) {
-        this.logger.debug(LOG_SOURCE$2, LOG_CATEGORY$2, 'searchAllPages', doc, keyword, flags);
-        this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SearchAllPages`, 'Begin', doc.id);
+        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'searchAllPages', doc, keyword, flags);
+        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SearchAllPages`, 'Begin', doc.id);
         const ctx = this.cache.getContext(doc.id);
         if (!ctx) {
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SearchAllPages`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SearchAllPages`, 'End', doc.id);
             return PdfTaskHelper.resolve({ results: [], total: 0 });
         }
         const length = 2 * (keyword.length + 1);
@@ -4308,7 +4308,7 @@ class PdfiumEngine {
                 results.push(...pageResults);
             }
             this.free(keywordPtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SearchAllPages`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SearchAllPages`, 'End', doc.id);
             searchAllPagesTask.resolve({
                 results,
                 total: results.length,
@@ -4317,7 +4317,7 @@ class PdfiumEngine {
         // Start the search process
         executeSearch().catch((error) => {
             this.free(keywordPtr);
-            this.logger.perf(LOG_SOURCE$2, LOG_CATEGORY$2, `SearchAllPages`, 'End', doc.id);
+            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `SearchAllPages`, 'End', doc.id);
             searchAllPagesTask.reject({
                 code: PdfErrorCode.Unknown,
                 message: `Error searching document: ${error}`,
@@ -4449,1449 +4449,12 @@ class PdfiumEngine {
     }
 }
 
-const LOG_SOURCE$1 = 'WebWorkerEngineRunner';
-const LOG_CATEGORY$1 = 'Engine';
-/**
- * Pdf engine runner, it will execute pdf engine based on the request it received and
- * send back the response with post message
- */
-class EngineRunner {
-    /**
-     * Create instance of EngineRunnder
-     * @param logger - logger instance
-     */
-    constructor(logger = new NoopLogger()) {
-        this.logger = logger;
-        /**
-         * Execute the request
-         * @param request - request that represent the pdf engine call
-         * @returns
-         *
-         * @protected
-         */
-        this.execute = (request) => {
-            this.logger.debug(LOG_SOURCE$1, LOG_CATEGORY$1, 'runner start exeucte request');
-            if (!this.engine) {
-                const error = {
-                    type: 'reject',
-                    reason: {
-                        code: PdfErrorCode.NotReady,
-                        message: 'engine has not started yet',
-                    },
-                };
-                const response = {
-                    id: request.id,
-                    type: 'ExecuteResponse',
-                    data: {
-                        type: 'error',
-                        value: error,
-                    },
-                };
-                this.respond(response);
-                return;
-            }
-            const engine = this.engine;
-            const { name, args } = request.data;
-            if (!engine[name]) {
-                const error = {
-                    type: 'reject',
-                    reason: {
-                        code: PdfErrorCode.NotSupport,
-                        message: `engine method ${name} is not supported yet`,
-                    },
-                };
-                const response = {
-                    id: request.id,
-                    type: 'ExecuteResponse',
-                    data: {
-                        type: 'error',
-                        value: error,
-                    },
-                };
-                this.respond(response);
-                return;
-            }
-            let task;
-            switch (name) {
-                case 'isSupport':
-                    task = this.engine[name](...args);
-                    break;
-                case 'initialize':
-                    task = this.engine[name](...args);
-                    break;
-                case 'destroy':
-                    task = this.engine[name](...args);
-                    break;
-                case 'openDocumentUrl':
-                    task = this.engine[name](...args);
-                    break;
-                case 'openDocumentFromBuffer':
-                    task = this.engine[name](...args);
-                    break;
-                case 'openDocumentFromLoader':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getDocPermissions':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getDocUserPermissions':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getMetadata':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getBookmarks':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getSignatures':
-                    task = this.engine[name](...args);
-                    break;
-                case 'renderPage':
-                    task = this.engine[name](...args);
-                    break;
-                case 'renderPageRect':
-                    task = this.engine[name](...args);
-                    break;
-                case 'renderAnnotation':
-                    task = this.engine[name](...args);
-                    break;
-                case 'renderThumbnail':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getAllAnnotations':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getPageAnnotations':
-                    task = this.engine[name](...args);
-                    break;
-                case 'createPageAnnotation':
-                    task = this.engine[name](...args);
-                    break;
-                case 'updatePageAnnotation':
-                    task = this.engine[name](...args);
-                    break;
-                case 'removePageAnnotation':
-                    task = this.engine[name](...args);
-                    break;
-                case 'updateAnnotationColor':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getPageTextRects':
-                    task = this.engine[name](...args);
-                    break;
-                case 'searchAllPages':
-                    task = this.engine[name](...args);
-                    break;
-                case 'closeDocument':
-                    task = this.engine[name](...args);
-                    break;
-                case 'saveAsCopy':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getAttachments':
-                    task = this.engine[name](...args);
-                    break;
-                case 'readAttachmentContent':
-                    task = this.engine[name](...args);
-                    break;
-                case 'setFormFieldValue':
-                    task = this.engine[name](...args);
-                    break;
-                case 'flattenPage':
-                    task = this.engine[name](...args);
-                    break;
-                case 'extractPages':
-                    task = this.engine[name](...args);
-                    break;
-                case 'extractText':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getTextSlices':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getPageGlyphs':
-                    task = this.engine[name](...args);
-                    break;
-                case 'getPageGeometry':
-                    task = this.engine[name](...args);
-                    break;
-                case 'merge':
-                    task = this.engine[name](...args);
-                    break;
-                case 'mergePages':
-                    task = this.engine[name](...args);
-                    break;
-            }
-            task.wait((result) => {
-                const response = {
-                    id: request.id,
-                    type: 'ExecuteResponse',
-                    data: {
-                        type: 'result',
-                        value: result,
-                    },
-                };
-                this.respond(response);
-            }, (error) => {
-                const response = {
-                    id: request.id,
-                    type: 'ExecuteResponse',
-                    data: {
-                        type: 'error',
-                        value: error,
-                    },
-                };
-                this.respond(response);
-            });
-        };
-    }
-    /**
-     * Listening on post message
-     */
-    listen() {
-        self.onmessage = (evt) => {
-            return this.handle(evt);
-        };
-    }
-    /**
-     * Handle post message
-     */
-    handle(evt) {
-        this.logger.debug(LOG_SOURCE$1, LOG_CATEGORY$1, 'webworker receive message event: ', evt.data);
-        try {
-            const request = evt.data;
-            switch (request.type) {
-                case 'ExecuteRequest':
-                    this.execute(request);
-                    break;
-            }
-        }
-        catch (e) {
-            this.logger.info(LOG_SOURCE$1, LOG_CATEGORY$1, 'webworker met error when processing message event:', e);
-        }
-    }
-    /**
-     * Send the ready response when pdf engine is ready
-     * @returns
-     *
-     * @protected
-     */
-    ready() {
-        this.listen();
-        this.respond({
-            id: '0',
-            type: 'ReadyResponse',
-        });
-        this.logger.debug(LOG_SOURCE$1, LOG_CATEGORY$1, 'runner is ready');
-    }
-    /**
-     * Send back the response
-     * @param response - response that needs sent back
-     *
-     * @protected
-     */
-    respond(response) {
-        this.logger.debug(LOG_SOURCE$1, LOG_CATEGORY$1, 'runner respond: ', response);
-        self.postMessage(response);
-    }
+async function createPdfiumEngine(wasmUrl, logger) {
+    const response = await fetch(wasmUrl);
+    const wasmBinary = await response.arrayBuffer();
+    const wasmModule = await init({ wasmBinary });
+    return new PdfiumEngine(wasmModule, logger);
 }
 
-/**
- * EngineRunner for pdfium-based wasm engine
- */
-class PdfiumEngineRunner extends EngineRunner {
-    /**
-     * Create an instance of PdfiumEngineRunner
-     * @param wasmBinary - wasm binary that contains the pdfium wasm file
-     */
-    constructor(wasmBinary) {
-        super();
-        this.wasmBinary = wasmBinary;
-    }
-    /**
-     * Initialize runner
-     */
-    async prepare() {
-        const wasmBinary = this.wasmBinary;
-        const wasmModule = await init({ wasmBinary });
-        this.engine = new PdfiumEngine(wasmModule);
-        this.ready();
-    }
-}
-
-const LOG_SOURCE = 'WebWorkerEngine';
-const LOG_CATEGORY = 'Engine';
-/**
- * Task that executed by webworker
- */
-class WorkerTask extends Task {
-    /**
-     * Create a task that bind to web worker with specified message id
-     * @param worker - web worker instance
-     * @param messageId - id of message
-     *
-     * @public
-     */
-    constructor(worker, messageId) {
-        super();
-        this.worker = worker;
-        this.messageId = messageId;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!Task.abort}
-     *
-     * @override
-     */
-    abort(e) {
-        super.abort(e);
-        this.worker.postMessage({
-            type: 'AbortRequest',
-            data: {
-                messageId: this.messageId,
-            },
-        });
-    }
-}
-/**
- * PDF engine that runs within webworker
- */
-class WebWorkerEngine {
-    /**
-     * Create an instance of WebWorkerEngine, it will create a worker with
-     * specified url.
-     * @param worker - webworker instance, this worker needs to contains the running instance of {@link EngineRunner}
-     * @param logger - logger instance
-     *
-     * @public
-     */
-    constructor(worker, logger = new NoopLogger()) {
-        this.worker = worker;
-        this.logger = logger;
-        /**
-         * All the tasks that is executing
-         */
-        this.tasks = new Map();
-        /**
-         * Handle event from web worker. There are 2 kinds of event
-         * 1. ReadyResponse: web worker is ready
-         * 2. ExecuteResponse: result of execution
-         * @param evt - message event from web worker
-         * @returns
-         *
-         * @private
-         */
-        this.handle = (evt) => {
-            this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'webworker engine start handling message: ', evt.data);
-            try {
-                const response = evt.data;
-                const task = this.tasks.get(response.id);
-                if (!task) {
-                    return;
-                }
-                switch (response.type) {
-                    case 'ReadyResponse':
-                        this.readyTask.resolve(true);
-                        break;
-                    case 'ExecuteResponse':
-                        {
-                            switch (response.data.type) {
-                                case 'result':
-                                    task.resolve(response.data.value);
-                                    break;
-                                case 'error':
-                                    task.reject(response.data.value.reason);
-                                    break;
-                            }
-                            this.tasks.delete(response.id);
-                        }
-                        break;
-                }
-            }
-            catch (e) {
-                this.logger.error(LOG_SOURCE, LOG_CATEGORY, 'webworker met error when handling message: ', e);
-            }
-        };
-        this.worker.addEventListener('message', this.handle);
-        this.readyTask = new WorkerTask(this.worker, WebWorkerEngine.readyTaskId);
-        this.tasks.set(WebWorkerEngine.readyTaskId, this.readyTask);
-    }
-    /**
-     * Generate a unique message id
-     * @returns message id
-     *
-     * @private
-     */
-    generateRequestId(id) {
-        return `${id}.${Date.now()}.${Math.random()}`;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.initialize}
-     *
-     * @public
-     */
-    initialize() {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'initialize');
-        const requestId = this.generateRequestId('General');
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'initialize',
-                args: [],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.destroy}
-     *
-     * @public
-     */
-    destroy() {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'destroy');
-        const requestId = this.generateRequestId('General');
-        const task = new WorkerTask(this.worker, requestId);
-        const finish = () => {
-            this.worker.removeEventListener('message', this.handle);
-            this.worker.terminate();
-        };
-        task.wait(finish, finish);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'destroy',
-                args: [],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.openDocumentUrl}
-     *
-     * @public
-     */
-    openDocumentUrl(file, options) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentUrl', file.url, options);
-        const requestId = this.generateRequestId(file.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'openDocumentUrl',
-                args: [file, options],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.openDocument}
-     *
-     * @public
-     */
-    openDocumentFromBuffer(file, password) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentFromBuffer', file, password);
-        const requestId = this.generateRequestId(file.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'openDocumentFromBuffer',
-                args: [file, password],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.openDocumentFromLoader}
-     *
-     * @public
-     */
-    openDocumentFromLoader(file, password) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'openDocumentFromLoader', file, password);
-        const requestId = this.generateRequestId(file.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'openDocumentFromLoader',
-                args: [file, password],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getMetadata}
-     *
-     * @public
-     */
-    getMetadata(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getMetadata', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getMetadata',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    updateAnnotationColor(doc, page, annotation, color, which = 0) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'setAnnotationColor', doc, page, annotation, color);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'updateAnnotationColor',
-                args: [doc, page, annotation, color, which],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getDocPermissions}
-     *
-     * @public
-     */
-    getDocPermissions(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getDocPermissions', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getDocPermissions',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getDocUserPermissions}
-     *
-     * @public
-     */
-    getDocUserPermissions(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getDocUserPermissions', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getDocUserPermissions',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getBookmarks}
-     *
-     * @public
-     */
-    getBookmarks(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getBookmarks', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getBookmarks',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getSignatures}
-     *
-     * @public
-     */
-    getSignatures(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getSignatures', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getSignatures',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.renderPage}
-     *
-     * @public
-     */
-    renderPage(doc, page, scaleFactor, rotation, dpr, options, imageType = 'image/webp') {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderPage', doc, page, scaleFactor, rotation, dpr, options);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'renderPage',
-                args: [doc, page, scaleFactor, rotation, dpr, options, imageType],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.renderPageRect}
-     *
-     * @public
-     */
-    renderPageRect(doc, page, scaleFactor, rotation, dpr, rect, options, imageType = 'image/webp') {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderPageRect', doc, page, scaleFactor, rotation, dpr, rect, options);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'renderPageRect',
-                args: [doc, page, scaleFactor, rotation, dpr, rect, options, imageType],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.renderAnnotation}
-     *
-     * @public
-     */
-    renderAnnotation(doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderAnnotation', doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'renderAnnotation',
-                args: [doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getAllAnnotations}
-     *
-     * @public
-     */
-    getAllAnnotations(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getAllAnnotations', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getAllAnnotations',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getPageAnnotations}
-     *
-     * @public
-     */
-    getPageAnnotations(doc, page) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageAnnotations', doc, page);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getPageAnnotations',
-                args: [doc, page],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.createPageAnnotation}
-     *
-     * @public
-     */
-    createPageAnnotation(doc, page, annotation) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'createPageAnnotations', doc, page, annotation);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'createPageAnnotation',
-                args: [doc, page, annotation],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    updatePageAnnotation(doc, page, annotation) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'updatePageAnnotation', doc, page, annotation);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'updatePageAnnotation',
-                args: [doc, page, annotation],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.removePageAnnotation}
-     *
-     * @public
-     */
-    removePageAnnotation(doc, page, annotation) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'removePageAnnotations', doc, page, annotation);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'removePageAnnotation',
-                args: [doc, page, annotation],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getPageTextRects}
-     *
-     * @public
-     */
-    getPageTextRects(doc, page, scaleFactor, rotation) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageTextRects', doc, page, scaleFactor, rotation);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getPageTextRects',
-                args: [doc, page, scaleFactor, rotation],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.renderThumbnail}
-     *
-     * @public
-     */
-    renderThumbnail(doc, page, scaleFactor, rotation, dpr) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'renderThumbnail', doc, page, scaleFactor, rotation, dpr);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'renderThumbnail',
-                args: [doc, page, scaleFactor, rotation, dpr],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.searchAllPages}
-     *
-     * @public
-     */
-    searchAllPages(doc, keyword, flags = []) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'searchAllPages 123', doc, keyword, flags);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'searchAllPages',
-                args: [doc, keyword, flags],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.saveAsCopy}
-     *
-     * @public
-     */
-    saveAsCopy(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'saveAsCopy', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'saveAsCopy',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getAttachments}
-     *
-     * @public
-     */
-    getAttachments(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getAttachments', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getAttachments',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.readAttachmentContent}
-     *
-     * @public
-     */
-    readAttachmentContent(doc, attachment) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'readAttachmentContent', doc, attachment);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'readAttachmentContent',
-                args: [doc, attachment],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.setFormFieldValue}
-     *
-     * @public
-     */
-    setFormFieldValue(doc, page, annotation, value) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'setFormFieldValue', doc, annotation, value);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'setFormFieldValue',
-                args: [doc, page, annotation, value],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.flattenPage}
-     *
-     * @public
-     */
-    flattenPage(doc, page, flag) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'flattenPage', doc, page, flag);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'flattenPage',
-                args: [doc, page, flag],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.extractPages}
-     *
-     * @public
-     */
-    extractPages(doc, pageIndexes) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'extractPages', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'extractPages',
-                args: [doc, pageIndexes],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.extractText}
-     *
-     * @public
-     */
-    extractText(doc, pageIndexes) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'extractText', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'extractText',
-                args: [doc, pageIndexes],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getTextSlices}
-     *
-     * @public
-     */
-    getTextSlices(doc, slices) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getTextSlices', doc, slices);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getTextSlices',
-                args: [doc, slices],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getPageGlyphs}
-     *
-     * @public
-     */
-    getPageGlyphs(doc, page) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageGlyphs', doc, page);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getPageGlyphs',
-                args: [doc, page],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.getPageGeometry}
-     *
-     * @public
-     */
-    getPageGeometry(doc, page) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'getPageGeometry', doc, page);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'getPageGeometry',
-                args: [doc, page],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.merge}
-     *
-     * @public
-     */
-    merge(files) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'merge', files);
-        const fileIds = files.map((file) => file.id).join('.');
-        const requestId = this.generateRequestId(fileIds);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'merge',
-                args: [files],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.mergePages}
-     *
-     * @public
-     */
-    mergePages(mergeConfigs) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'mergePages', mergeConfigs);
-        const requestId = this.generateRequestId(mergeConfigs.map((config) => config.docId).join('.'));
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'mergePages',
-                args: [mergeConfigs],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * {@inheritDoc @embedpdf/models!PdfEngine.closeDocument}
-     *
-     * @public
-     */
-    closeDocument(doc) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'closeDocument', doc);
-        const requestId = this.generateRequestId(doc.id);
-        const task = new WorkerTask(this.worker, requestId);
-        const request = {
-            id: requestId,
-            type: 'ExecuteRequest',
-            data: {
-                name: 'closeDocument',
-                args: [doc],
-            },
-        };
-        this.proxy(task, request);
-        return task;
-    }
-    /**
-     * Send the request to webworker inside and register the task
-     * @param task - task that waiting for the response
-     * @param request - request that needs send to web worker
-     * @param transferables - transferables that need to transfer to webworker
-     * @returns
-     *
-     * @internal
-     */
-    proxy(task, request, transferables = []) {
-        this.logger.debug(LOG_SOURCE, LOG_CATEGORY, 'send request to worker', task, request, transferables);
-        this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `${request.data.name}`, 'Begin', request.id);
-        this.readyTask.wait(() => {
-            this.worker.postMessage(request, transferables);
-            task.wait(() => {
-                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `${request.data.name}`, 'End', request.id);
-            }, () => {
-                this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `${request.data.name}`, 'End', request.id);
-            });
-            this.tasks.set(request.id, task);
-        }, () => {
-            this.logger.perf(LOG_SOURCE, LOG_CATEGORY, `${request.data.name}`, 'End', request.id);
-            task.reject({
-                code: PdfErrorCode.Initialization,
-                message: 'worker initialization failed',
-            });
-        });
-    }
-}
-WebWorkerEngine.readyTaskId = '0';
-
-/**
- * Create mock of pdf engine
- * @param partialEngine - partial configuration of engine
- * @returns - mock of pdf engine
- *
- * @public
- */
-function createMockPdfEngine(partialEngine) {
-    const engine = {
-        openDocumentUrl: jest.fn((file, options) => {
-            return PdfTaskHelper.create();
-        }),
-        openDocumentFromBuffer: jest.fn((file, password) => {
-            return PdfTaskHelper.create();
-        }),
-        openDocumentFromLoader: jest.fn((file, password) => {
-            return PdfTaskHelper.create();
-        }),
-        getMetadata: () => {
-            return PdfTaskHelper.resolve({
-                title: 'title',
-                author: 'author',
-                subject: 'subject',
-                keywords: 'keywords',
-                producer: 'producer',
-                creator: 'creator',
-                creationDate: 'creationDate',
-                modificationDate: 'modificationDate',
-            });
-        },
-        getDocPermissions: (doc) => {
-            return PdfTaskHelper.resolve(0xffffffff);
-        },
-        getDocUserPermissions: (doc) => {
-            return PdfTaskHelper.resolve(0xffffffff);
-        },
-        getSignatures: (doc) => {
-            const signatures = [];
-            return PdfTaskHelper.resolve(signatures);
-        },
-        updateAnnotationColor: (doc, page, annotation, color, which = 0) => {
-            return PdfTaskHelper.resolve(true);
-        },
-        getBookmarks: (doc) => {
-            const bookmarks = [];
-            bookmarks.push({
-                title: 'Page 1',
-                target: {
-                    type: 'destination',
-                    destination: {
-                        pageIndex: 1,
-                        zoom: {
-                            mode: PdfZoomMode.FitPage,
-                        },
-                        view: [],
-                    },
-                },
-            }, {
-                title: 'Page 2',
-                target: {
-                    type: 'destination',
-                    destination: {
-                        pageIndex: 2,
-                        zoom: {
-                            mode: PdfZoomMode.FitPage,
-                        },
-                        view: [],
-                    },
-                },
-                children: [
-                    {
-                        title: 'Page 3',
-                        target: {
-                            type: 'destination',
-                            destination: {
-                                pageIndex: 3,
-                                zoom: {
-                                    mode: PdfZoomMode.FitPage,
-                                },
-                                view: [],
-                            },
-                        },
-                    },
-                ],
-            });
-            return PdfTaskHelper.resolve({
-                bookmarks,
-            });
-        },
-        renderPage: jest.fn((doc, page, scaleFactor, rotation, dpr, options) => {
-            const pageSize = rotation % 2 === 0 ? page.size : swap(page.size);
-            const imageSize = {
-                width: Math.ceil(pageSize.width * scaleFactor),
-                height: Math.ceil(pageSize.height * scaleFactor),
-            };
-            const pixelCount = imageSize.width * imageSize.height;
-            const array = new Uint8ClampedArray(pixelCount * 4);
-            const rgbValue = page.index % 255;
-            const alphaValue = 255;
-            for (let i = 0; i < pixelCount; i++) {
-                for (let j = 0; j < 3; j++) {
-                    const index = i * 4 + j;
-                    array[index] = rgbValue;
-                }
-                array[i * 4 + 3] = alphaValue;
-            }
-            const ab = array.buffer;
-            const realBuffer = ab instanceof ArrayBuffer ? ab : new Uint8Array(array).buffer;
-            const blob = new Blob([realBuffer], { type: 'application/octet-stream' });
-            return PdfTaskHelper.resolve(blob);
-        }),
-        renderPageRect: jest.fn((doc, page, scaleFactor, rotation, dpr, rect, options) => {
-            const pageSize = rotation % 2 === 0 ? page.size : swap(page.size);
-            const imageSize = {
-                width: Math.ceil(pageSize.width * scaleFactor),
-                height: Math.ceil(pageSize.height * scaleFactor),
-            };
-            const pixelCount = imageSize.width * imageSize.height;
-            const array = new Uint8ClampedArray(pixelCount * 4);
-            const rgbValue = page.index % 255;
-            const alphaValue = 255;
-            for (let i = 0; i < pixelCount; i++) {
-                for (let j = 0; j < 3; j++) {
-                    const index = i * 4 + j;
-                    array[index] = rgbValue;
-                }
-                array[i * 4 + 3] = alphaValue;
-            }
-            const ab = array.buffer;
-            const realBuffer = ab instanceof ArrayBuffer ? ab : new Uint8Array(array).buffer;
-            const blob = new Blob([realBuffer], { type: 'application/octet-stream' });
-            return PdfTaskHelper.resolve(blob);
-        }),
-        renderThumbnail: jest.fn((doc, page) => {
-            const thumbnailWidth = page.size.width / 4;
-            const thumbnailHeight = page.size.height / 4;
-            const pixelCount = thumbnailWidth * thumbnailHeight;
-            const array = new Uint8ClampedArray(pixelCount * 4);
-            const rgbValue = page.index % 255;
-            const alphaValue = 255;
-            for (let i = 0; i < pixelCount; i++) {
-                for (let j = 0; j < 3; j++) {
-                    const index = i * 4 + j;
-                    array[index] = rgbValue;
-                }
-                array[i * 4 + 3] = alphaValue;
-            }
-            const ab = array.buffer;
-            const realBuffer = ab instanceof ArrayBuffer ? ab : new Uint8Array(array).buffer;
-            const blob = new Blob([realBuffer], { type: 'image/png' });
-            return PdfTaskHelper.resolve(blob);
-        }),
-        renderAnnotation: jest.fn((doc, page, annotation, scaleFactor, rotation, dpr, mode, imageType) => {
-            return PdfTaskHelper.resolve(new Blob([], { type: 'image/png' }));
-        }),
-        getAllAnnotations: jest.fn((doc) => {
-            return PdfTaskHelper.resolve({});
-        }),
-        getPageAnnotations: jest.fn((doc, page) => {
-            const link = {
-                pageIndex: page.index,
-                id: page.index + 1,
-                type: PdfAnnotationSubtype.LINK,
-                target: {
-                    type: 'action',
-                    action: {
-                        type: PdfActionType.URI,
-                        uri: 'https://localhost',
-                    },
-                },
-                text: 'localhost',
-                rect: {
-                    origin: {
-                        x: 0,
-                        y: 0,
-                    },
-                    size: {
-                        width: 100,
-                        height: 100,
-                    },
-                },
-            };
-            const annotations = [];
-            annotations.push(link);
-            return PdfTaskHelper.resolve(annotations);
-        }),
-        createPageAnnotation: jest.fn(() => {
-            return PdfTaskHelper.resolve(1);
-        }),
-        updatePageAnnotation: jest.fn(() => {
-            return PdfTaskHelper.resolve(true);
-        }),
-        removePageAnnotation: jest.fn(() => {
-            return PdfTaskHelper.resolve(true);
-        }),
-        getPageTextRects: jest.fn((doc, page, scaleFactor, rotation) => {
-            const textRects = [
-                {
-                    content: 'pdf text',
-                    font: {
-                        family: 'sans-serif',
-                        size: 12,
-                    },
-                    rect: {
-                        origin: {
-                            x: 0,
-                            y: 0,
-                        },
-                        size: {
-                            width: 100,
-                            height: 100,
-                        },
-                    },
-                },
-            ];
-            return PdfTaskHelper.resolve(textRects);
-        }),
-        closeDocument: (pdf) => {
-            return PdfTaskHelper.resolve(true);
-        },
-        saveAsCopy: (pdf) => {
-            return PdfTaskHelper.resolve(new ArrayBuffer(0));
-        },
-        flattenPage: (pdf, page, flag) => {
-            return PdfTaskHelper.resolve(PdfPageFlattenResult.Success);
-        },
-        extractPages: (pdf, pageIndexes) => {
-            return PdfTaskHelper.resolve(new ArrayBuffer(0));
-        },
-        extractText: (pdf, pageIndexes) => {
-            return PdfTaskHelper.resolve('');
-        },
-        getTextSlices: (doc, slices) => {
-            return PdfTaskHelper.resolve([]);
-        },
-        getPageGlyphs: (doc, page) => {
-            return PdfTaskHelper.resolve([]);
-        },
-        getPageGeometry: (doc, page) => {
-            return PdfTaskHelper.resolve({
-                runs: [],
-            });
-        },
-        merge: (files) => {
-            return PdfTaskHelper.resolve({
-                id: 'id',
-                content: new ArrayBuffer(0),
-            });
-        },
-        mergePages: (mergeConfigs) => {
-            return PdfTaskHelper.resolve({
-                id: 'id',
-                content: new ArrayBuffer(0),
-            });
-        },
-        searchAllPages: (doc, keyword, flags) => {
-            // Create a mock search result
-            const mockResult = {
-                pageIndex: 0,
-                charIndex: 0,
-                charCount: keyword.length,
-                rects: [
-                    {
-                        origin: {
-                            x: 0,
-                            y: 0,
-                        },
-                        size: {
-                            width: 50,
-                            height: 20,
-                        },
-                    },
-                ],
-                context: {
-                    before: '',
-                    match: '',
-                    after: '',
-                    truncatedLeft: false,
-                    truncatedRight: false,
-                },
-            };
-            // Return a mock SearchAllPagesResult with a single result
-            return PdfTaskHelper.resolve({
-                results: [mockResult],
-                total: 1,
-            });
-        },
-        getAttachments: (doc) => {
-            return PdfTaskHelper.resolve([]);
-        },
-        readAttachmentContent: (doc, attachment) => {
-            return PdfTaskHelper.resolve(new ArrayBuffer(0));
-        },
-        setFormFieldValue: (doc, page, annotation, text) => {
-            return PdfTaskHelper.resolve(true);
-        },
-        ...partialEngine,
-    };
-    return engine;
-}
-/**
- * Create mock of pdf document
- * @param doc - partial configuration of document
- * @returns mock of pdf document
- *
- * @public
- */
-function createMockPdfDocument(doc) {
-    const pageCount = 10;
-    const pageWidth = 100;
-    const pageHeight = 200;
-    const pages = [];
-    for (let i = 0; i < pageCount; i++) {
-        pages.push({
-            index: i,
-            size: {
-                width: pageWidth,
-                height: pageHeight,
-            },
-        });
-    }
-    return {
-        id: 'id',
-        pageCount: pageCount,
-        pages: pages,
-        ...doc,
-    };
-}
-/**
- * Create mock of pdf file
- * @param file - partial configuration of file
- * @returns mock of pdf file
- *
- * @public
- */
-function createMockPdfFile(file) {
-    return {
-        id: 'id',
-        content: new ArrayBuffer(0),
-    };
-}
-
-export { BitmapFormat, EngineRunner, PdfiumEngine, PdfiumEngineRunner, PdfiumErrorCode, RenderFlag, WebWorkerEngine, WorkerTask, browserImageDataToBlobConverter, createMockPdfDocument, createMockPdfEngine, createMockPdfFile, readArrayBuffer, readString };
-//# sourceMappingURL=index.js.map
+export { createPdfiumEngine };
+//# sourceMappingURL=pdfium-direct-engine.js.map
