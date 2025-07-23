@@ -1,3 +1,34 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var index_exports = {};
+__export(index_exports, {
+  PRINT_PLUGIN_ID: () => PRINT_PLUGIN_ID,
+  PageRangeType: () => PageRangeType,
+  PrintPlugin: () => PrintPlugin,
+  PrintPluginPackage: () => PrintPluginPackage,
+  PrintQuality: () => PrintQuality,
+  manifest: () => manifest
+});
+module.exports = __toCommonJS(index_exports);
+
 // src/lib/manifest.ts
 var PRINT_PLUGIN_ID = "print";
 var manifest = {
@@ -13,10 +44,10 @@ var manifest = {
 };
 
 // src/lib/print-plugin.ts
-import { BasePlugin } from "@embedpdf/core";
+var import_core2 = require("@embedpdf/core");
 
 // ../plugin-render/dist/index.js
-import { BasePlugin as f } from "@embedpdf/core";
+var import_core = require("@embedpdf/core");
 
 // ../models/dist/index.js
 var Rotation = /* @__PURE__ */ ((Rotation2) => {
@@ -124,7 +155,7 @@ var PdfAnnotationFlagValue = Object.entries(
 );
 
 // ../plugin-render/dist/index.js
-var g = class g2 extends f {
+var g = class g2 extends import_core.BasePlugin {
   constructor(e, n, r) {
     super(e, n), this.engine = r;
   }
@@ -204,7 +235,7 @@ var PageRangeType = /* @__PURE__ */ ((PageRangeType2) => {
 })(PageRangeType || {});
 
 // src/lib/print-plugin.ts
-var PrintPlugin = class extends BasePlugin {
+var PrintPlugin = class extends import_core2.BasePlugin {
   constructor(id, registry, config) {
     super(id, registry);
     this.config = config;
@@ -359,12 +390,13 @@ var PrintPluginPackage = {
   },
   initialState: {}
 };
-export {
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
   PRINT_PLUGIN_ID,
   PageRangeType,
   PrintPlugin,
   PrintPluginPackage,
   PrintQuality,
   manifest
-};
-//# sourceMappingURL=index.js.map
+});
+//# sourceMappingURL=index.cjs.map
