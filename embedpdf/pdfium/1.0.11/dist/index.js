@@ -29,14 +29,19 @@ var createPdfium = (() => {
     [
       '_EPDF_RenderAnnotBitmap',
       '_EPDFAnnot_GenerateAppearance',
+      '_EPDFAnnot_GenerateAppearanceWithBlend',
+      '_EPDFAnnot_GetBlendMode',
       '_EPDFAnnot_GetBorderDashPattern',
       '_EPDFAnnot_GetBorderDashPatternCount',
       '_EPDFAnnot_GetBorderEffect',
       '_EPDFAnnot_GetBorderStyle',
       '_EPDFAnnot_GetColor',
+      '_EPDFAnnot_GetIntent',
       '_EPDFAnnot_GetRectangleDifferences',
+      '_EPDFAnnot_GetRichContent',
       '_EPDFAnnot_SetBorderStyle',
       '_EPDFAnnot_SetColor',
+      '_EPDFAnnot_SetIntent',
       '_FORM_CanRedo',
       '_FORM_CanUndo',
       '_FORM_DoDocumentAAction',
@@ -5881,6 +5886,24 @@ var createPdfium = (() => {
     ));
     (Module['_EPDFAnnot_GenerateAppearance'] =
       createExportWrapper('EPDFAnnot_GenerateAppearance', 1));
+    (Module['_EPDFAnnot_GenerateAppearanceWithBlend'] =
+      createExportWrapper('EPDFAnnot_GenerateAppearanceWithBlend', 2));
+    (Module['_EPDFAnnot_GetBlendMode'] = createExportWrapper(
+      'EPDFAnnot_GetBlendMode',
+      1,
+    ));
+    (Module['_EPDFAnnot_SetIntent'] = createExportWrapper(
+      'EPDFAnnot_SetIntent',
+      2,
+    ));
+    (Module['_EPDFAnnot_GetIntent'] = createExportWrapper(
+      'EPDFAnnot_GetIntent',
+      3,
+    ));
+    (Module['_EPDFAnnot_GetRichContent'] = createExportWrapper(
+      'EPDFAnnot_GetRichContent',
+      3,
+    ));
     (Module['_FPDFDoc_GetAttachmentCount'] = createExportWrapper(
       'FPDFDoc_GetAttachmentCount',
       1,
@@ -7675,6 +7698,8 @@ const functions = {
         'boolean',
     ],
     EPDFAnnot_GenerateAppearance: [['number'], 'boolean'],
+    EPDFAnnot_GenerateAppearanceWithBlend: [['number', 'number'], 'boolean'],
+    EPDFAnnot_GetBlendMode: [['number'], 'number'],
     EPDFAnnot_GetBorderDashPattern: [['number', 'number', 'number'], 'boolean'],
     EPDFAnnot_GetBorderDashPatternCount: [['number'], 'number'],
     EPDFAnnot_GetBorderEffect: [['number', 'number'], 'boolean'],
@@ -7683,15 +7708,18 @@ const functions = {
         ['number', 'number', 'number', 'number', 'number', 'number'],
         'boolean',
     ],
+    EPDFAnnot_GetIntent: [['number', 'number', 'number'], 'number'],
     EPDFAnnot_GetRectangleDifferences: [
         ['number', 'number', 'number', 'number', 'number'],
         'boolean',
     ],
+    EPDFAnnot_GetRichContent: [['number', 'number', 'number'], 'number'],
     EPDFAnnot_SetBorderStyle: [['number', 'number', 'number'], 'boolean'],
     EPDFAnnot_SetColor: [
         ['number', 'number', 'number', 'number', 'number', 'number'],
         'boolean',
     ],
+    EPDFAnnot_SetIntent: [['number', 'string'], 'boolean'],
     FORM_CanRedo: [['number', 'number'], 'boolean'],
     FORM_CanUndo: [['number', 'number'], 'boolean'],
     FORM_DoDocumentAAction: [['number', 'number'], null],
