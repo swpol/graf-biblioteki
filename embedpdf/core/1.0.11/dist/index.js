@@ -1,117 +1,87 @@
-// src/lib/utils/dependency-resolver.ts
-var DependencyResolver = class {
+import { Rotation as T, transformSize as A } from "@embedpdf/models";
+class C {
   constructor() {
     this.dependencyGraph = /* @__PURE__ */ new Map();
   }
-  addNode(id, dependencies = []) {
-    this.dependencyGraph.set(id, new Set(dependencies));
+  addNode(t, e = []) {
+    this.dependencyGraph.set(t, new Set(e));
   }
   hasCircularDependencies() {
-    const visited = /* @__PURE__ */ new Set();
-    const recursionStack = /* @__PURE__ */ new Set();
-    const dfs = (id) => {
-      visited.add(id);
-      recursionStack.add(id);
-      const dependencies = this.dependencyGraph.get(id) || /* @__PURE__ */ new Set();
-      for (const dep of dependencies) {
-        if (!visited.has(dep)) {
-          if (dfs(dep)) return true;
-        } else if (recursionStack.has(dep)) {
-          return true;
-        }
-      }
-      recursionStack.delete(id);
-      return false;
+    const t = /* @__PURE__ */ new Set(), e = /* @__PURE__ */ new Set(), i = (r) => {
+      t.add(r), e.add(r);
+      const n = this.dependencyGraph.get(r) || /* @__PURE__ */ new Set();
+      for (const o of n)
+        if (t.has(o)) {
+          if (e.has(o))
+            return !0;
+        } else if (i(o)) return !0;
+      return e.delete(r), !1;
     };
-    for (const id of this.dependencyGraph.keys()) {
-      if (!visited.has(id)) {
-        if (dfs(id)) return true;
-      }
-    }
-    return false;
+    for (const r of this.dependencyGraph.keys())
+      if (!t.has(r) && i(r))
+        return !0;
+    return !1;
   }
   resolveLoadOrder() {
-    if (this.hasCircularDependencies()) {
+    if (this.hasCircularDependencies())
       throw new Error("Circular dependencies detected");
-    }
-    const result = [];
-    const visited = /* @__PURE__ */ new Set();
-    const temp = /* @__PURE__ */ new Set();
-    const visit = (id) => {
-      if (temp.has(id)) throw new Error("Circular dependency");
-      if (visited.has(id)) return;
-      temp.add(id);
-      const dependencies = this.dependencyGraph.get(id) || /* @__PURE__ */ new Set();
-      for (const dep of dependencies) {
-        visit(dep);
-      }
-      temp.delete(id);
-      visited.add(id);
-      result.push(id);
+    const t = [], e = /* @__PURE__ */ new Set(), i = /* @__PURE__ */ new Set(), r = (n) => {
+      if (i.has(n)) throw new Error("Circular dependency");
+      if (e.has(n)) return;
+      i.add(n);
+      const o = this.dependencyGraph.get(n) || /* @__PURE__ */ new Set();
+      for (const a of o)
+        r(a);
+      i.delete(n), e.add(n), t.push(n);
     };
-    for (const id of this.dependencyGraph.keys()) {
-      if (!visited.has(id)) {
-        visit(id);
-      }
-    }
-    return result;
+    for (const n of this.dependencyGraph.keys())
+      e.has(n) || r(n);
+    return t;
   }
-};
-
-// src/lib/types/errors.ts
-var PluginRegistrationError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "PluginRegistrationError";
+}
+class u extends Error {
+  constructor(t) {
+    super(t), this.name = "PluginRegistrationError";
   }
-};
-var PluginNotFoundError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "PluginNotFoundError";
+}
+class d extends Error {
+  constructor(t) {
+    super(t), this.name = "PluginNotFoundError";
   }
-};
-var CircularDependencyError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "CircularDependencyError";
+}
+class z extends Error {
+  constructor(t) {
+    super(t), this.name = "CircularDependencyError";
   }
-};
-var CapabilityNotFoundError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "CapabilityNotFoundError";
+}
+class j extends Error {
+  constructor(t) {
+    super(t), this.name = "CapabilityNotFoundError";
   }
-};
-var CapabilityConflictError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "CapabilityConflictError";
+}
+class G extends Error {
+  constructor(t) {
+    super(t), this.name = "CapabilityConflictError";
   }
-};
-var PluginInitializationError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "PluginInitializationError";
+}
+class x extends Error {
+  constructor(t) {
+    super(t), this.name = "PluginInitializationError";
   }
-};
-var PluginConfigurationError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "PluginConfigurationError";
+}
+class O extends Error {
+  constructor(t) {
+    super(t), this.name = "PluginConfigurationError";
   }
-};
-
-// src/lib/store/plugin-store.ts
-var PluginStore = class {
+}
+class M {
   /**
    * Initializes the PluginStore with the main store and plugin ID.
    * @param store The main store instance.
    * @param pluginId The unique identifier for the plugin.
    */
-  constructor(store, pluginId) {
-    this.store = store;
-    this.pluginId = pluginId;
+  constructor(t, e) {
+    this.store = t, this.pluginId = e;
   }
   /**
    * Gets the current state of the plugin.
@@ -126,8 +96,8 @@ var PluginStore = class {
    * @param action The action to dispatch.
    * @returns The updated global store state (after plugin reducer).
    */
-  dispatch(action) {
-    return this.store.dispatchToPlugin(this.pluginId, action);
+  dispatch(t) {
+    return this.store.dispatchToPlugin(this.pluginId, t);
   }
   /**
    * Subscribes to state changes only for this specific plugin.
@@ -136,12 +106,12 @@ var PluginStore = class {
    * @param listener The callback to invoke when plugin state changes.
    * @returns A function to unsubscribe the listener.
    */
-  subscribeToState(listener) {
-    return this.store.subscribeToPlugin(this.pluginId, (action, newPluginState, oldPluginState) => {
-      listener(
-        action,
-        newPluginState,
-        oldPluginState
+  subscribeToState(t) {
+    return this.store.subscribeToPlugin(this.pluginId, (e, i, r) => {
+      t(
+        e,
+        i,
+        r
       );
     });
   }
@@ -155,65 +125,44 @@ var PluginStore = class {
    * @param handler The callback to invoke when the action occurs.
    * @returns A function to unsubscribe the handler.
    */
-  onAction(type, handler) {
-    return this.store.onAction(type, (action, state, oldState) => {
-      handler(
-        action,
-        state.plugins[this.pluginId],
-        oldState.plugins[this.pluginId]
+  onAction(t, e) {
+    return this.store.onAction(t, (i, r, n) => {
+      e(
+        i,
+        r.plugins[this.pluginId],
+        n.plugins[this.pluginId]
       );
     });
   }
-};
-
-// src/lib/store/actions.ts
-var LOAD_DOCUMENT = "LOAD_DOCUMENT";
-var SET_DOCUMENT = "SET_DOCUMENT";
-var SET_DOCUMENT_ERROR = "SET_DOCUMENT_ERROR";
-var SET_SCALE = "SET_SCALE";
-var SET_ROTATION = "SET_ROTATION";
-var SET_PAGES = "SET_PAGES";
-var CORE_ACTION_TYPES = [
-  LOAD_DOCUMENT,
-  SET_DOCUMENT,
-  SET_DOCUMENT_ERROR,
-  SET_SCALE,
-  SET_ROTATION,
-  SET_PAGES
-];
-var loadDocument = () => ({ type: LOAD_DOCUMENT });
-var setDocument = (document) => ({
-  type: SET_DOCUMENT,
-  payload: document
+}
+const S = "LOAD_DOCUMENT", m = "SET_DOCUMENT", b = "SET_DOCUMENT_ERROR", E = "SET_SCALE", P = "SET_ROTATION", R = "SET_PAGES", D = [
+  S,
+  m,
+  b,
+  E,
+  P,
+  R
+], K = () => ({ type: S }), B = (s) => ({
+  type: m,
+  payload: s
+}), W = (s) => ({
+  type: b,
+  payload: s
+}), Y = (s) => ({ type: E, payload: s }), H = (s) => ({
+  type: P,
+  payload: s
+}), J = (s) => ({
+  type: R,
+  payload: s
 });
-var setDocumentError = (error) => ({
-  type: SET_DOCUMENT_ERROR,
-  payload: error
-});
-var setScale = (scale) => ({ type: SET_SCALE, payload: scale });
-var setRotation = (rotation) => ({
-  type: SET_ROTATION,
-  payload: rotation
-});
-var setPages = (pages) => ({
-  type: SET_PAGES,
-  payload: pages
-});
-
-// src/lib/store/store.ts
-var Store = class {
+class $ {
   /**
    * Initializes the store with the provided core state.
    * @param reducer          The core reducer function
    * @param initialCoreState The initial core state
    */
-  constructor(reducer, initialCoreState2) {
-    this.initialCoreState = initialCoreState2;
-    this.pluginReducers = {};
-    this.listeners = [];
-    this.pluginListeners = {};
-    this.state = { core: initialCoreState2, plugins: {} };
-    this.coreReducer = reducer;
+  constructor(t, e) {
+    this.initialCoreState = e, this.pluginReducers = {}, this.listeners = [], this.pluginListeners = {}, this.state = { core: e, plugins: {} }, this.coreReducer = t;
   }
   /**
    * Adds a reducer for a plugin-specific state.
@@ -221,9 +170,8 @@ var Store = class {
    * @param reducer The reducer function for the plugin state.
    * @param initialState The initial state for the plugin.
    */
-  addPluginReducer(pluginId, reducer, initialState) {
-    this.state.plugins[pluginId] = initialState;
-    this.pluginReducers[pluginId] = reducer;
+  addPluginReducer(t, e, i) {
+    this.state.plugins[t] = i, this.pluginReducers[t] = e;
   }
   /**
    * Dispatches an action *only* to the core reducer.
@@ -232,15 +180,13 @@ var Store = class {
    * @param action The action to dispatch, typed as CoreAction
    * @returns The updated *global* store state
    */
-  dispatchToCore(action) {
-    if (!this.coreReducer) {
+  dispatchToCore(t) {
+    if (!this.coreReducer)
       return this.getState();
-    }
-    const oldState = this.getState();
-    this.state.core = this.coreReducer(this.state.core, action);
-    const newState = this.getState();
-    this.listeners.forEach((listener) => listener(action, newState, oldState));
-    return newState;
+    const e = this.getState();
+    this.state.core = this.coreReducer(this.state.core, t);
+    const i = this.getState();
+    return this.listeners.forEach((r) => r(t, i, e)), i;
   }
   /**
    * Dispatches an action *only* to a specific plugin.
@@ -252,25 +198,16 @@ var Store = class {
    * @param notifyGlobal Whether to also notify global store listeners
    * @returns The updated *global* store state
    */
-  dispatchToPlugin(pluginId, action, notifyGlobal = true) {
-    const oldGlobalState = this.getState();
-    const reducer = this.pluginReducers[pluginId];
-    if (!reducer) {
-      return oldGlobalState;
-    }
-    const oldPluginState = oldGlobalState.plugins[pluginId];
-    const newPluginState = reducer(oldPluginState, action);
-    this.state.plugins[pluginId] = newPluginState;
-    const newGlobalState = this.getState();
-    if (notifyGlobal) {
-      this.listeners.forEach((listener) => listener(action, newGlobalState, oldGlobalState));
-    }
-    if (this.pluginListeners[pluginId]) {
-      this.pluginListeners[pluginId].forEach((listener) => {
-        listener(action, newPluginState, oldPluginState);
-      });
-    }
-    return newPluginState;
+  dispatchToPlugin(t, e, i = !0) {
+    const r = this.getState(), n = this.pluginReducers[t];
+    if (!n)
+      return r;
+    const o = r.plugins[t], a = n(o, e);
+    this.state.plugins[t] = a;
+    const l = this.getState();
+    return i && this.listeners.forEach((h) => h(e, l, r)), this.pluginListeners[t] && this.pluginListeners[t].forEach((h) => {
+      h(e, a, o);
+    }), a;
   }
   /**
    * Dispatches an action to update the state using:
@@ -281,21 +218,15 @@ var Store = class {
    *
    * @param action The action to dispatch (can be CoreAction or any Action).
    */
-  dispatch(action) {
-    const oldState = this.getState();
-    if (this.isCoreAction(action)) {
-      this.state.core = this.coreReducer(this.state.core, action);
+  dispatch(t) {
+    const e = this.getState();
+    this.isCoreAction(t) && (this.state.core = this.coreReducer(this.state.core, t));
+    for (const r in this.pluginReducers) {
+      const n = this.pluginReducers[r], o = e.plugins[r];
+      n && (this.state.plugins[r] = n(o, t));
     }
-    for (const pluginId in this.pluginReducers) {
-      const reducer = this.pluginReducers[pluginId];
-      const oldPluginState = oldState.plugins[pluginId];
-      if (reducer) {
-        this.state.plugins[pluginId] = reducer(oldPluginState, action);
-      }
-    }
-    const newState = this.getState();
-    this.listeners.forEach((listener) => listener(action, newState, oldState));
-    return newState;
+    const i = this.getState();
+    return this.listeners.forEach((r) => r(t, i, e)), i;
   }
   /**
    * Returns a shallow copy of the current state.
@@ -314,10 +245,9 @@ var Store = class {
    * @param listener The callback to invoke on state changes
    * @returns A function to unsubscribe the listener
    */
-  subscribe(listener) {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
+  subscribe(t) {
+    return this.listeners.push(t), () => {
+      this.listeners = this.listeners.filter((e) => e !== t);
     };
   }
   /**
@@ -328,21 +258,13 @@ var Store = class {
    * @param listener The callback to invoke on plugin state changes.
    * @returns A function to unsubscribe the listener.
    */
-  subscribeToPlugin(pluginId, listener) {
-    if (!(pluginId in this.state.plugins)) {
+  subscribeToPlugin(t, e) {
+    if (!(t in this.state.plugins))
       throw new Error(
-        `Plugin state not found for plugin "${pluginId}". Did you forget to call addPluginReducer?`
+        `Plugin state not found for plugin "${t}". Did you forget to call addPluginReducer?`
       );
-    }
-    if (!this.pluginListeners[pluginId]) {
-      this.pluginListeners[pluginId] = [];
-    }
-    this.pluginListeners[pluginId].push(listener);
-    return () => {
-      this.pluginListeners[pluginId] = this.pluginListeners[pluginId].filter((l) => l !== listener);
-      if (this.pluginListeners[pluginId].length === 0) {
-        delete this.pluginListeners[pluginId];
-      }
+    return this.pluginListeners[t] || (this.pluginListeners[t] = []), this.pluginListeners[t].push(e), () => {
+      this.pluginListeners[t] = this.pluginListeners[t].filter((i) => i !== e), this.pluginListeners[t].length === 0 && delete this.pluginListeners[t];
     };
   }
   /**
@@ -353,11 +275,9 @@ var Store = class {
    * @param handler The callback to invoke when the action occurs.
    * @returns A function to unsubscribe the handler.
    */
-  onAction(type, handler) {
-    return this.subscribe((action, newState, oldState) => {
-      if (action.type === type) {
-        handler(action, newState, oldState);
-      }
+  onAction(t, e) {
+    return this.subscribe((i, r, n) => {
+      i.type === t && e(i, r, n);
     });
   }
   /**
@@ -365,162 +285,115 @@ var Store = class {
    * @param pluginId The unique identifier for the plugin.
    * @returns A PluginStore instance for the plugin.
    */
-  getPluginStore(pluginId) {
-    if (!(pluginId in this.state.plugins)) {
+  getPluginStore(t) {
+    if (!(t in this.state.plugins))
       throw new Error(
-        `Plugin state not found for plugin "${pluginId}". Did you forget to call addPluginReducer?`
+        `Plugin state not found for plugin "${t}". Did you forget to call addPluginReducer?`
       );
-    }
-    return new PluginStore(this, pluginId);
+    return new M(this, t);
   }
   /**
    * Helper method to check if an action is a CoreAction.
    * Adjust if you have a more refined way to differentiate CoreAction vs. any other Action.
    */
-  isCoreAction(action) {
-    return CORE_ACTION_TYPES.includes(action.type);
+  isCoreAction(t) {
+    return D.includes(t.type);
   }
   /**
    * Destroy the store: drop every listener and plugin reducer
    */
   destroy() {
+    var t, e;
     this.listeners.length = 0;
-    for (const id in this.pluginListeners) {
-      this.pluginListeners[id]?.splice?.(0);
-    }
-    this.pluginListeners = {};
-    this.pluginReducers = {};
-    this.state.plugins = {};
-    this.state.core = { ...this.initialCoreState };
+    for (const i in this.pluginListeners)
+      (e = (t = this.pluginListeners[i]) == null ? void 0 : t.splice) == null || e.call(t, 0);
+    this.pluginListeners = {}, this.pluginReducers = {}, this.state.plugins = {}, this.state.core = { ...this.initialCoreState };
   }
-};
-
-// src/lib/store/initial-state.ts
-import { Rotation } from "@embedpdf/models";
-var initialCoreState = (config) => ({
-  scale: config?.scale ?? 1,
-  rotation: config?.rotation ?? Rotation.Degree0,
+}
+const _ = (s) => ({
+  scale: (s == null ? void 0 : s.scale) ?? 1,
+  rotation: (s == null ? void 0 : s.rotation) ?? T.Degree0,
   document: null,
   pages: [],
-  loading: false,
+  loading: !1,
   error: null
-});
-
-// src/lib/store/selectors.ts
-import { transformSize } from "@embedpdf/models";
-var getPagesWithRotatedSize = (state) => {
-  return state.pages.map(
-    (page) => page.map((p) => ({
-      ...p,
-      rotatedSize: transformSize(p.size, state.rotation, 1)
-    }))
-  );
-};
-
-// src/lib/store/reducer.ts
-var coreReducer = (state, action) => {
-  switch (action.type) {
-    case LOAD_DOCUMENT:
+}), Q = (s) => s.pages.map(
+  (t) => t.map((e) => ({
+    ...e,
+    rotatedSize: A(e.size, s.rotation, 1)
+  }))
+), L = (s, t) => {
+  switch (t.type) {
+    case S:
       return {
-        ...state,
-        loading: true,
+        ...s,
+        loading: !0,
         error: null
       };
-    case SET_DOCUMENT:
+    case m:
       return {
-        ...state,
-        document: action.payload,
-        pages: action.payload.pages.map((page) => [page]),
-        loading: false,
+        ...s,
+        document: t.payload,
+        pages: t.payload.pages.map((e) => [e]),
+        loading: !1,
         error: null
       };
-    case SET_ROTATION:
+    case P:
       return {
-        ...state,
-        rotation: action.payload
+        ...s,
+        rotation: t.payload
       };
-    case SET_PAGES:
+    case R:
       return {
-        ...state,
-        pages: action.payload
+        ...s,
+        pages: t.payload
       };
-    case SET_DOCUMENT_ERROR:
+    case b:
       return {
-        ...state,
-        loading: false,
-        error: action.payload
+        ...s,
+        loading: !1,
+        error: t.payload
       };
-    case SET_SCALE:
+    case E:
       return {
-        ...state,
-        scale: action.payload
+        ...s,
+        scale: t.payload
       };
     default:
-      return state;
+      return s;
   }
 };
-
-// src/lib/registry/plugin-registry.ts
-var PluginRegistry = class {
-  constructor(engine, config) {
-    this.plugins = /* @__PURE__ */ new Map();
-    this.manifests = /* @__PURE__ */ new Map();
-    this.capabilities = /* @__PURE__ */ new Map();
-    // capability -> pluginId
-    this.status = /* @__PURE__ */ new Map();
-    this.configurations = /* @__PURE__ */ new Map();
-    this.engineInitialized = false;
-    this.initPromise = null;
-    this.pendingRegistrations = [];
-    this.processingRegistrations = [];
-    this.initialized = false;
-    this.isInitializing = false;
-    this.pluginsReadyPromise = null;
-    this.destroyed = false;
-    this.resolver = new DependencyResolver();
-    this.engine = engine;
-    this.initialCoreState = initialCoreState(config);
-    this.store = new Store(coreReducer, this.initialCoreState);
+class V {
+  constructor(t, e) {
+    this.plugins = /* @__PURE__ */ new Map(), this.manifests = /* @__PURE__ */ new Map(), this.capabilities = /* @__PURE__ */ new Map(), this.status = /* @__PURE__ */ new Map(), this.configurations = /* @__PURE__ */ new Map(), this.engineInitialized = !1, this.initPromise = null, this.pendingRegistrations = [], this.processingRegistrations = [], this.initialized = !1, this.isInitializing = !1, this.pluginsReadyPromise = null, this.destroyed = !1, this.resolver = new C(), this.engine = t, this.initialCoreState = _(e), this.store = new $(L, this.initialCoreState);
   }
   /**
    * Ensure engine is initialized before proceeding
    */
   async ensureEngineInitialized() {
-    if (this.engineInitialized) {
-      return;
-    }
-    if (this.engine.initialize) {
-      const task = this.engine.initialize();
-      await task.toPromise();
-      this.engineInitialized = true;
-    } else {
-      this.engineInitialized = true;
-    }
+    this.engineInitialized || (this.engine.initialize ? (await this.engine.initialize().toPromise(), this.engineInitialized = !0) : this.engineInitialized = !0);
   }
   /**
    * Register a plugin without initializing it
    */
-  registerPlugin(pluginPackage, config) {
-    if (this.initialized && !this.isInitializing) {
-      throw new PluginRegistrationError("Cannot register plugins after initialization");
-    }
-    this.validateManifest(pluginPackage.manifest);
-    this.store.addPluginReducer(
-      pluginPackage.manifest.id,
+  registerPlugin(t, e) {
+    if (this.initialized && !this.isInitializing)
+      throw new u("Cannot register plugins after initialization");
+    this.validateManifest(t.manifest), this.store.addPluginReducer(
+      t.manifest.id,
       // We need one type assertion here since we can't fully reconcile TAction with Action
       // due to TypeScript's type system limitations with generic variance
-      pluginPackage.reducer,
-      "function" === typeof pluginPackage.initialState ? pluginPackage.initialState(
+      t.reducer,
+      typeof t.initialState == "function" ? t.initialState(
         this.initialCoreState,
         {
-          ...pluginPackage.manifest.defaultConfig,
-          ...config
+          ...t.manifest.defaultConfig,
+          ...e
         }
-      ) : pluginPackage.initialState
-    );
-    this.pendingRegistrations.push({
-      package: pluginPackage,
-      config
+      ) : t.initialState
+    ), this.pendingRegistrations.push({
+      package: t,
+      config: e
     });
   }
   /**
@@ -539,216 +412,155 @@ var PluginRegistry = class {
    * Get a promise that resolves when all plugins are ready
    */
   pluginsReady() {
-    if (this.pluginsReadyPromise) {
-      return this.pluginsReadyPromise;
-    }
-    this.pluginsReadyPromise = (async () => {
-      if (!this.initialized) {
-        await this.initialize();
-      }
-      const readyPromises = Array.from(this.plugins.values()).map(
-        (p) => typeof p.ready === "function" ? p.ready() : Promise.resolve()
+    return this.pluginsReadyPromise ? this.pluginsReadyPromise : (this.pluginsReadyPromise = (async () => {
+      this.initialized || await this.initialize();
+      const t = Array.from(this.plugins.values()).map(
+        (e) => typeof e.ready == "function" ? e.ready() : Promise.resolve()
       );
-      await Promise.all(readyPromises);
-    })();
-    return this.pluginsReadyPromise;
+      await Promise.all(t);
+    })(), this.pluginsReadyPromise);
   }
   /**
    * INITIALISE THE REGISTRY – runs once no-matter-how-many calls   *
    */
   async initialize() {
-    if (this.destroyed) {
-      throw new PluginRegistrationError("Registry has been destroyed");
-    }
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-    this.initPromise = (async () => {
-      if (this.initialized) {
-        throw new PluginRegistrationError("Registry is already initialized");
-      }
-      this.isInitializing = true;
+    if (this.destroyed)
+      throw new u("Registry has been destroyed");
+    return this.initPromise ? this.initPromise : (this.initPromise = (async () => {
+      var t;
+      if (this.initialized)
+        throw new u("Registry is already initialized");
+      this.isInitializing = !0;
       try {
-        await this.ensureEngineInitialized();
-        if (this.destroyed) {
+        if (await this.ensureEngineInitialized(), this.destroyed)
           return;
-        }
-        while (this.pendingRegistrations.length > 0) {
-          if (this.destroyed) {
+        for (; this.pendingRegistrations.length > 0; ) {
+          if (this.destroyed)
             return;
-          }
-          this.processingRegistrations = [...this.pendingRegistrations];
-          this.pendingRegistrations = [];
-          for (const reg of this.processingRegistrations) {
-            const dependsOn = /* @__PURE__ */ new Set();
-            const allDeps = [...reg.package.manifest.requires, ...reg.package.manifest.optional];
-            for (const cap of allDeps) {
-              const provider = this.processingRegistrations.find(
-                (r) => r.package.manifest.provides.includes(cap)
+          this.processingRegistrations = [...this.pendingRegistrations], this.pendingRegistrations = [];
+          for (const i of this.processingRegistrations) {
+            const r = /* @__PURE__ */ new Set(), n = [...i.package.manifest.requires, ...i.package.manifest.optional];
+            for (const o of n) {
+              const a = this.processingRegistrations.find(
+                (l) => l.package.manifest.provides.includes(o)
               );
-              if (provider) dependsOn.add(provider.package.manifest.id);
+              a && r.add(a.package.manifest.id);
             }
-            this.resolver.addNode(reg.package.manifest.id, [...dependsOn]);
+            this.resolver.addNode(i.package.manifest.id, [...r]);
           }
-          const loadOrder = this.resolver.resolveLoadOrder();
-          for (const id of loadOrder) {
-            const reg = this.processingRegistrations.find((r) => r.package.manifest.id === id);
-            await this.initializePlugin(reg.package.manifest, reg.package.create, reg.config);
+          const e = this.resolver.resolveLoadOrder();
+          for (const i of e) {
+            const r = this.processingRegistrations.find((n) => n.package.manifest.id === i);
+            await this.initializePlugin(r.package.manifest, r.package.create, r.config);
           }
-          this.processingRegistrations = [];
-          this.resolver = new DependencyResolver();
+          this.processingRegistrations = [], this.resolver = new C();
         }
-        for (const plugin of this.plugins.values()) {
-          await plugin.postInitialize?.().catch((e) => {
-            console.error(`Error in postInitialize for plugin ${plugin.id}`, e);
-            this.status.set(plugin.id, "error");
-          });
-        }
-        this.initialized = true;
-      } catch (err) {
-        if (err instanceof Error) {
-          throw new CircularDependencyError(
-            `Failed to resolve plugin dependencies: ${err.message}`
-          );
-        }
-        throw err;
+        for (const e of this.plugins.values())
+          await ((t = e.postInitialize) == null ? void 0 : t.call(e).catch((i) => {
+            console.error(`Error in postInitialize for plugin ${e.id}`, i), this.status.set(e.id, "error");
+          }));
+        this.initialized = !0;
+      } catch (e) {
+        throw e instanceof Error ? new z(
+          `Failed to resolve plugin dependencies: ${e.message}`
+        ) : e;
       } finally {
-        this.isInitializing = false;
+        this.isInitializing = !1;
       }
-    })();
-    return this.initPromise;
+    })(), this.initPromise);
   }
   /**
    * Initialize a single plugin with all necessary checks
    */
-  async initializePlugin(manifest, packageCreator, config) {
-    const finalConfig = {
-      ...manifest.defaultConfig,
-      ...config
+  async initializePlugin(t, e, i) {
+    const r = {
+      ...t.defaultConfig,
+      ...i
     };
-    this.validateConfig(manifest.id, finalConfig, manifest.defaultConfig);
-    const plugin = packageCreator(this, this.engine, finalConfig);
-    this.validatePlugin(plugin);
-    for (const capability of manifest.requires) {
-      if (!this.capabilities.has(capability)) {
-        throw new PluginRegistrationError(
-          `Missing required capability: ${capability} for plugin ${manifest.id}`
+    this.validateConfig(t.id, r, t.defaultConfig);
+    const n = e(this, this.engine, r);
+    this.validatePlugin(n);
+    for (const o of t.requires)
+      if (!this.capabilities.has(o))
+        throw new u(
+          `Missing required capability: ${o} for plugin ${t.id}`
         );
-      }
-    }
-    for (const capability of manifest.optional) {
-      if (this.capabilities.has(capability)) {
-        console.debug(`Optional capability ${capability} is available for plugin ${manifest.id}`);
-      }
-    }
-    console.log("initializePlugin", manifest.id, manifest.provides);
-    for (const capability of manifest.provides) {
-      if (this.capabilities.has(capability)) {
-        throw new PluginRegistrationError(
-          `Capability ${capability} is already provided by plugin ${this.capabilities.get(capability)}`
+    for (const o of t.optional)
+      this.capabilities.has(o) && console.debug(`Optional capability ${o} is available for plugin ${t.id}`);
+    console.log("initializePlugin", t.id, t.provides);
+    for (const o of t.provides) {
+      if (this.capabilities.has(o))
+        throw new u(
+          `Capability ${o} is already provided by plugin ${this.capabilities.get(o)}`
         );
-      }
-      this.capabilities.set(capability, manifest.id);
+      this.capabilities.set(o, t.id);
     }
-    this.plugins.set(manifest.id, plugin);
-    this.manifests.set(manifest.id, manifest);
-    this.status.set(manifest.id, "registered");
-    this.configurations.set(manifest.id, finalConfig);
+    this.plugins.set(t.id, n), this.manifests.set(t.id, t), this.status.set(t.id, "registered"), this.configurations.set(t.id, r);
     try {
-      if (plugin.initialize) {
-        await plugin.initialize(finalConfig);
-      }
-      this.status.set(manifest.id, "active");
-    } catch (error) {
-      this.plugins.delete(manifest.id);
-      this.manifests.delete(manifest.id);
-      console.log("initializePlugin failed", manifest.id, manifest.provides);
-      manifest.provides.forEach((cap) => this.capabilities.delete(cap));
-      throw error;
+      n.initialize && await n.initialize(r), this.status.set(t.id, "active");
+    } catch (o) {
+      throw this.plugins.delete(t.id), this.manifests.delete(t.id), console.log("initializePlugin failed", t.id, t.provides), t.provides.forEach((a) => this.capabilities.delete(a)), o;
     }
   }
-  getPluginConfig(pluginId) {
-    const config = this.configurations.get(pluginId);
-    if (!config) {
-      throw new PluginNotFoundError(`Configuration for plugin ${pluginId} not found`);
-    }
-    return config;
+  getPluginConfig(t) {
+    const e = this.configurations.get(t);
+    if (!e)
+      throw new d(`Configuration for plugin ${t} not found`);
+    return e;
   }
-  validateConfig(pluginId, config, defaultConfig) {
-    const requiredKeys = Object.keys(defaultConfig);
-    const missingKeys = requiredKeys.filter((key) => !config.hasOwnProperty(key));
-    if (missingKeys.length > 0) {
-      throw new PluginConfigurationError(
-        `Missing required configuration keys for plugin ${pluginId}: ${missingKeys.join(", ")}`
+  validateConfig(t, e, i) {
+    const n = Object.keys(i).filter((o) => !e.hasOwnProperty(o));
+    if (n.length > 0)
+      throw new O(
+        `Missing required configuration keys for plugin ${t}: ${n.join(", ")}`
       );
-    }
   }
-  async updatePluginConfig(pluginId, config) {
-    const plugin = this.getPlugin(pluginId);
-    if (!plugin) {
-      throw new PluginNotFoundError(`Plugin ${pluginId} not found`);
-    }
-    const manifest = this.manifests.get(pluginId);
-    const currentConfig = this.configurations.get(pluginId);
-    if (!manifest || !currentConfig) {
-      throw new PluginNotFoundError(`Plugin ${pluginId} not found`);
-    }
-    const newConfig = {
-      ...currentConfig,
-      ...config
+  async updatePluginConfig(t, e) {
+    const i = this.getPlugin(t);
+    if (!i)
+      throw new d(`Plugin ${t} not found`);
+    const r = this.manifests.get(t), n = this.configurations.get(t);
+    if (!r || !n)
+      throw new d(`Plugin ${t} not found`);
+    const o = {
+      ...n,
+      ...e
     };
-    this.validateConfig(pluginId, newConfig, manifest.defaultConfig);
-    this.configurations.set(pluginId, newConfig);
-    if (plugin.initialize) {
-      await plugin.initialize(newConfig);
-    }
+    this.validateConfig(t, o, r.defaultConfig), this.configurations.set(t, o), i.initialize && await i.initialize(o);
   }
   /**
    * Register multiple plugins at once
    */
-  registerPluginBatch(registrations) {
-    for (const reg of registrations) {
-      this.registerPlugin(reg.package, reg.config);
-    }
+  registerPluginBatch(t) {
+    for (const e of t)
+      this.registerPlugin(e.package, e.config);
   }
   /**
    * Unregister a plugin
    */
-  async unregisterPlugin(pluginId) {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) {
-      throw new PluginNotFoundError(`Plugin ${pluginId} is not registered`);
-    }
-    const manifest = this.manifests.get(pluginId);
-    if (!manifest) {
-      throw new PluginNotFoundError(`Manifest for plugin ${pluginId} not found`);
-    }
-    for (const [otherId, otherManifest] of this.manifests.entries()) {
-      if (otherId === pluginId) continue;
-      const dependsOnThis = [...otherManifest.requires, ...otherManifest.optional].some(
-        (cap) => manifest.provides.includes(cap)
-      );
-      if (dependsOnThis) {
-        throw new PluginRegistrationError(
-          `Cannot unregister plugin ${pluginId}: plugin ${otherId} depends on it`
+  async unregisterPlugin(t) {
+    const e = this.plugins.get(t);
+    if (!e)
+      throw new d(`Plugin ${t} is not registered`);
+    const i = this.manifests.get(t);
+    if (!i)
+      throw new d(`Manifest for plugin ${t} not found`);
+    for (const [r, n] of this.manifests.entries()) {
+      if (r === t) continue;
+      if ([...n.requires, ...n.optional].some(
+        (a) => i.provides.includes(a)
+      ))
+        throw new u(
+          `Cannot unregister plugin ${t}: plugin ${r} depends on it`
         );
-      }
     }
     try {
-      if (plugin.destroy) {
-        await plugin.destroy();
-      }
-      for (const capability of manifest.provides) {
-        this.capabilities.delete(capability);
-      }
-      this.plugins.delete(pluginId);
-      this.manifests.delete(pluginId);
-      this.status.delete(pluginId);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to unregister plugin ${pluginId}: ${error.message}`);
-      }
-      throw error;
+      e.destroy && await e.destroy();
+      for (const r of i.provides)
+        this.capabilities.delete(r);
+      this.plugins.delete(t), this.manifests.delete(t), this.status.delete(t);
+    } catch (r) {
+      throw r instanceof Error ? new Error(`Failed to unregister plugin ${t}: ${r.message}`) : r;
     }
   }
   /**
@@ -756,30 +568,24 @@ var PluginRegistry = class {
    * @param pluginId The ID of the plugin to get
    * @returns The plugin instance or null if not found
    */
-  getPlugin(pluginId) {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) {
-      return null;
-    }
-    return plugin;
+  getPlugin(t) {
+    const e = this.plugins.get(t);
+    return e || null;
   }
   /**
    * Get a plugin that provides a specific capability
    * @param capability The capability to get a provider for
    * @returns The plugin providing the capability or null if not found
    */
-  getCapabilityProvider(capability) {
-    const pluginId = this.capabilities.get(capability);
-    if (!pluginId) {
-      return null;
-    }
-    return this.getPlugin(pluginId);
+  getCapabilityProvider(t) {
+    const e = this.capabilities.get(t);
+    return e ? this.getPlugin(e) : null;
   }
   /**
    * Check if a capability is available
    */
-  hasCapability(capability) {
-    return this.capabilities.has(capability);
+  hasCapability(t) {
+    return this.capabilities.has(t);
   }
   /**
    * Get all registered plugins
@@ -790,43 +596,35 @@ var PluginRegistry = class {
   /**
    * Get plugin status
    */
-  getPluginStatus(pluginId) {
-    const status = this.status.get(pluginId);
-    if (!status) {
-      throw new PluginNotFoundError(`Plugin ${pluginId} not found`);
-    }
-    return status;
+  getPluginStatus(t) {
+    const e = this.status.get(t);
+    if (!e)
+      throw new d(`Plugin ${t} not found`);
+    return e;
   }
   /**
    * Validate plugin object
    */
-  validatePlugin(plugin) {
-    if (!plugin.id) {
-      throw new PluginRegistrationError("Plugin must have an id");
-    }
+  validatePlugin(t) {
+    if (!t.id)
+      throw new u("Plugin must have an id");
   }
   /**
    * Validate plugin manifest
    */
-  validateManifest(manifest) {
-    if (!manifest.id) {
-      throw new PluginRegistrationError("Manifest must have an id");
-    }
-    if (!manifest.name) {
-      throw new PluginRegistrationError("Manifest must have a name");
-    }
-    if (!manifest.version) {
-      throw new PluginRegistrationError("Manifest must have a version");
-    }
-    if (!Array.isArray(manifest.provides)) {
-      throw new PluginRegistrationError("Manifest must have a provides array");
-    }
-    if (!Array.isArray(manifest.requires)) {
-      throw new PluginRegistrationError("Manifest must have a requires array");
-    }
-    if (!Array.isArray(manifest.optional)) {
-      throw new PluginRegistrationError("Manifest must have an optional array");
-    }
+  validateManifest(t) {
+    if (!t.id)
+      throw new u("Manifest must have an id");
+    if (!t.name)
+      throw new u("Manifest must have a name");
+    if (!t.version)
+      throw new u("Manifest must have a version");
+    if (!Array.isArray(t.provides))
+      throw new u("Manifest must have a provides array");
+    if (!Array.isArray(t.requires))
+      throw new u("Manifest must have a requires array");
+    if (!Array.isArray(t.optional))
+      throw new u("Manifest must have an optional array");
   }
   isDestroyed() {
     return this.destroyed;
@@ -835,64 +633,42 @@ var PluginRegistry = class {
    * DESTROY EVERYTHING – waits for any ongoing initialise(), once  *
    */
   async destroy() {
-    if (this.destroyed) throw new PluginRegistrationError("Registry has already been destroyed");
-    this.destroyed = true;
+    var t;
+    if (this.destroyed) throw new u("Registry has already been destroyed");
+    this.destroyed = !0;
     try {
       await this.initPromise;
     } catch {
     }
-    for (const plugin of Array.from(this.plugins.values()).reverse()) {
-      await plugin.destroy?.();
-    }
-    this.store.destroy();
-    this.plugins.clear();
-    this.manifests.clear();
-    this.capabilities.clear();
-    this.status.clear();
-    this.pendingRegistrations.length = 0;
-    this.processingRegistrations.length = 0;
+    for (const e of Array.from(this.plugins.values()).reverse())
+      await ((t = e.destroy) == null ? void 0 : t.call(e));
+    this.store.destroy(), this.plugins.clear(), this.manifests.clear(), this.capabilities.clear(), this.status.clear(), this.pendingRegistrations.length = 0, this.processingRegistrations.length = 0;
   }
-};
-
-// src/lib/utils/plugin-helpers.ts
-function createPluginRegistration(pluginPackage, config) {
+}
+function X(s, t) {
   return {
-    package: pluginPackage,
-    config
+    package: s,
+    config: t
   };
 }
-
-// src/lib/base/base-plugin.ts
-var BasePlugin = class {
-  constructor(id, registry) {
-    this.id = id;
-    this.registry = registry;
-    // Track debounced actions
-    this.debouncedActions = {};
-    this.unsubscribeFromState = null;
-    this.unsubscribeFromCoreStore = null;
-    if (id !== this.constructor.id) {
+class Z {
+  constructor(t, e) {
+    if (this.id = t, this.registry = e, this.debouncedActions = {}, this.unsubscribeFromState = null, this.unsubscribeFromCoreStore = null, t !== this.constructor.id)
       throw new Error(
-        `Plugin ID mismatch: ${id} !== ${this.constructor.id}`
+        `Plugin ID mismatch: ${t} !== ${this.constructor.id}`
       );
-    }
-    this.coreStore = this.registry.getStore();
-    this.pluginStore = this.coreStore.getPluginStore(this.id);
-    this.unsubscribeFromState = this.pluginStore.subscribeToState((action, newState, oldState) => {
-      this.onStoreUpdated(oldState, newState);
-    });
-    this.unsubscribeFromCoreStore = this.coreStore.subscribe((action, newState, oldState) => {
-      this.onCoreStoreUpdated(oldState, newState);
-    });
-    this.readyPromise = new Promise((resolve) => {
-      this.readyResolve = resolve;
-    });
-    this.readyResolve();
+    this.coreStore = this.registry.getStore(), this.pluginStore = this.coreStore.getPluginStore(this.id), this.unsubscribeFromState = this.pluginStore.subscribeToState((i, r, n) => {
+      this.onStoreUpdated(n, r);
+    }), this.unsubscribeFromCoreStore = this.coreStore.subscribe((i, r, n) => {
+      this.onCoreStoreUpdated(n, r);
+    }), this.readyPromise = new Promise((i) => {
+      this.readyResolve = i;
+    }), this.readyResolve();
   }
   provides() {
     if (!this._capability) {
-      const cap = this.buildCapability();
-      this._capability = Object.freeze(cap);
+      const t = this.buildCapability();
+      this._capability = Object.freeze(t);
     }
     return this._capability;
   }
@@ -923,20 +699,20 @@ var BasePlugin = class {
   /**
    * Core Dispatch
    */
-  dispatchCoreAction(action) {
-    return this.coreStore.dispatchToCore(action);
+  dispatchCoreAction(t) {
+    return this.coreStore.dispatchToCore(t);
   }
   /**
    * Dispatch an action to all plugins
    */
-  dispatchToAllPlugins(action) {
-    return this.coreStore.dispatch(action);
+  dispatchToAllPlugins(t) {
+    return this.coreStore.dispatch(t);
   }
   /**
    * Dispatch an action
    */
-  dispatch(action) {
-    return this.pluginStore.dispatch(action);
+  dispatch(t) {
+    return this.pluginStore.dispatch(t);
   }
   /**
    * Dispatch an action with debouncing to prevent rapid repeated calls
@@ -944,54 +720,41 @@ var BasePlugin = class {
    * @param debounceTime Time in ms to debounce (default: 100ms)
    * @returns boolean indicating whether the action was dispatched or debounced
    */
-  debouncedDispatch(action, debounceTime = 100) {
-    const now = Date.now();
-    const lastActionTime = this.debouncedActions[action.type] || 0;
-    if (now - lastActionTime >= debounceTime) {
-      this.debouncedActions[action.type] = now;
-      this.dispatch(action);
-      return true;
-    }
-    return false;
+  debouncedDispatch(t, e = 100) {
+    const i = Date.now(), r = this.debouncedActions[t.type] || 0;
+    return i - r >= e ? (this.debouncedActions[t.type] = i, this.dispatch(t), !0) : !1;
   }
   /**
    * Subscribe to state changes
    */
-  subscribe(listener) {
-    return this.pluginStore.subscribeToState(listener);
+  subscribe(t) {
+    return this.pluginStore.subscribeToState(t);
   }
   /**
    * Subscribe to core store changes
    */
-  subscribeToCoreStore(listener) {
-    return this.coreStore.subscribe(listener);
+  subscribeToCoreStore(t) {
+    return this.coreStore.subscribe(t);
   }
   /**
    * Called when the plugin store state is updated
    * @param oldState Previous state
    * @param newState New state
    */
-  onStoreUpdated(oldState, newState) {
+  onStoreUpdated(t, e) {
   }
   /**
    * Called when the core store state is updated
    * @param oldState Previous state
    * @param newState New state
    */
-  onCoreStoreUpdated(oldState, newState) {
+  onCoreStoreUpdated(t, e) {
   }
   /**
    * Cleanup method to be called when plugin is being destroyed
    */
   destroy() {
-    if (this.unsubscribeFromState) {
-      this.unsubscribeFromState();
-      this.unsubscribeFromState = null;
-    }
-    if (this.unsubscribeFromCoreStore) {
-      this.unsubscribeFromCoreStore();
-      this.unsubscribeFromCoreStore = null;
-    }
+    this.unsubscribeFromState && (this.unsubscribeFromState(), this.unsubscribeFromState = null), this.unsubscribeFromCoreStore && (this.unsubscribeFromCoreStore(), this.unsubscribeFromCoreStore = null);
   }
   /**
    * Returns a promise that resolves when the plugin is ready
@@ -1009,269 +772,187 @@ var BasePlugin = class {
    * Reset the ready state (useful for plugins that need to reinitialize)
    */
   resetReady() {
-    this.readyPromise = new Promise((resolve) => {
-      this.readyResolve = resolve;
+    this.readyPromise = new Promise((t) => {
+      this.readyResolve = t;
     });
   }
-};
-
-// src/lib/utils/event-control.ts
-var EventControl = class {
-  constructor(handler, options) {
-    this.handler = handler;
-    this.options = options;
-    this.lastRun = 0;
-    this.handle = (data) => {
-      if (this.options.mode === "debounce") {
-        this.debounce(data);
-      } else {
-        this.throttle(data);
-      }
+}
+class N {
+  constructor(t, e) {
+    this.handler = t, this.options = e, this.lastRun = 0, this.handle = (i) => {
+      this.options.mode === "debounce" ? this.debounce(i) : this.throttle(i);
     };
   }
-  debounce(data) {
-    if (this.timeoutId) {
-      window.clearTimeout(this.timeoutId);
-    }
-    this.timeoutId = window.setTimeout(() => {
-      this.handler(data);
-      this.timeoutId = void 0;
+  debounce(t) {
+    this.timeoutId && window.clearTimeout(this.timeoutId), this.timeoutId = window.setTimeout(() => {
+      this.handler(t), this.timeoutId = void 0;
     }, this.options.wait);
   }
-  throttle(data) {
+  throttle(t) {
     if (this.options.mode === "debounce") return;
-    const now = Date.now();
-    const throttleMode = this.options.throttleMode || "leading-trailing";
-    if (now - this.lastRun >= this.options.wait) {
-      if (throttleMode === "leading-trailing") {
-        this.handler(data);
-      }
-      this.lastRun = now;
-    }
-    if (this.timeoutId) {
-      window.clearTimeout(this.timeoutId);
-    }
-    this.timeoutId = window.setTimeout(
+    const e = Date.now(), i = this.options.throttleMode || "leading-trailing";
+    e - this.lastRun >= this.options.wait && (i === "leading-trailing" && this.handler(t), this.lastRun = e), this.timeoutId && window.clearTimeout(this.timeoutId), this.timeoutId = window.setTimeout(
       () => {
-        this.handler(data);
-        this.lastRun = Date.now();
-        this.timeoutId = void 0;
+        this.handler(t), this.lastRun = Date.now(), this.timeoutId = void 0;
       },
-      this.options.wait - (now - this.lastRun)
+      this.options.wait - (e - this.lastRun)
     );
   }
   destroy() {
-    if (this.timeoutId) {
-      window.clearTimeout(this.timeoutId);
-    }
+    this.timeoutId && window.clearTimeout(this.timeoutId);
   }
-};
-
-// src/lib/utils/math.ts
-function clamp(value, min, max) {
-  return value < min ? min : value > max ? max : value;
 }
-function arePropsEqual(a, b, visited) {
-  if (a === b) {
-    return true;
-  }
-  if (a == null || b == null) {
-    return a === b;
-  }
-  const aType = typeof a;
-  const bType = typeof b;
-  if (aType !== bType) return false;
-  if (aType === "object") {
-    if (!visited) visited = /* @__PURE__ */ new Set();
-    const pairId = getPairId(a, b);
-    if (visited.has(pairId)) {
-      return true;
-    }
-    visited.add(pairId);
-    const aIsArray = Array.isArray(a);
-    const bIsArray = Array.isArray(b);
-    if (aIsArray && bIsArray) {
-      return arraysEqualUnordered(a, b, visited);
-    } else if (!aIsArray && !bIsArray) {
-      return objectsEqual(a, b, visited);
-    } else {
-      return false;
-    }
-  }
-  return false;
+function tt(s, t, e) {
+  return s < t ? t : s > e ? e : s;
 }
-function getPairId(a, b) {
-  return `${objectId(a)}__${objectId(b)}`;
-}
-var objectIdCounter = 0;
-var objectIds = /* @__PURE__ */ new WeakMap();
-function objectId(obj) {
-  if (!objectIds.has(obj)) {
-    objectIds.set(obj, ++objectIdCounter);
+function f(s, t, e) {
+  if (s === t)
+    return !0;
+  if (s == null || t == null)
+    return s === t;
+  const i = typeof s;
+  if (i !== typeof t) return !1;
+  if (i === "object") {
+    e || (e = /* @__PURE__ */ new Set());
+    const n = F(s, t);
+    if (e.has(n))
+      return !0;
+    e.add(n);
+    const o = Array.isArray(s), a = Array.isArray(t);
+    return o && a ? q(s, t, e) : !o && !a ? I(s, t, e) : !1;
   }
-  return objectIds.get(obj);
+  return !1;
 }
-function arraysEqualUnordered(a, b, visited) {
-  if (a.length !== b.length) return false;
-  const used = new Array(b.length).fill(false);
-  outer: for (let i = 0; i < a.length; i++) {
-    const elemA = a[i];
-    for (let j = 0; j < b.length; j++) {
-      if (used[j]) continue;
-      if (arePropsEqual(elemA, b[j], visited)) {
-        used[j] = true;
-        continue outer;
+function F(s, t) {
+  return `${v(s)}__${v(t)}`;
+}
+let k = 0;
+const w = /* @__PURE__ */ new WeakMap();
+function v(s) {
+  return w.has(s) || w.set(s, ++k), w.get(s);
+}
+function q(s, t, e) {
+  if (s.length !== t.length) return !1;
+  const i = new Array(t.length).fill(!1);
+  t: for (let r = 0; r < s.length; r++) {
+    const n = s[r];
+    for (let o = 0; o < t.length; o++)
+      if (!i[o] && f(n, t[o], e)) {
+        i[o] = !0;
+        continue t;
       }
-    }
-    return false;
+    return !1;
   }
-  return true;
+  return !0;
 }
-function objectsEqual(a, b, visited) {
-  const aKeys = Object.keys(a).sort();
-  const bKeys = Object.keys(b).sort();
-  if (aKeys.length !== bKeys.length) return false;
-  for (let i = 0; i < aKeys.length; i++) {
-    if (aKeys[i] !== bKeys[i]) return false;
+function I(s, t, e) {
+  const i = Object.keys(s).sort(), r = Object.keys(t).sort();
+  if (i.length !== r.length) return !1;
+  for (let n = 0; n < i.length; n++)
+    if (i[n] !== r[n]) return !1;
+  for (const n of i) {
+    const o = s[n], a = t[n];
+    if (!f(o, a, e))
+      return !1;
   }
-  for (const key of aKeys) {
-    const valA = a[key];
-    const valB = b[key];
-    if (!arePropsEqual(valA, valB, visited)) {
-      return false;
-    }
-  }
-  return true;
+  return !0;
 }
-
-// src/lib/utils/eventing.ts
-function createEmitter() {
-  const listeners = /* @__PURE__ */ new Set();
-  const on = (l) => {
-    listeners.add(l);
-    return () => listeners.delete(l);
-  };
+function et() {
+  const s = /* @__PURE__ */ new Set();
   return {
-    emit: (v = void 0) => listeners.forEach((l) => l(v)),
-    on,
-    off: (l) => listeners.delete(l),
-    clear: () => listeners.clear()
+    emit: (e = void 0) => s.forEach((i) => i(e)),
+    on: (e) => (s.add(e), () => s.delete(e)),
+    off: (e) => s.delete(e),
+    clear: () => s.clear()
   };
 }
-function createBehaviorEmitter(initial, equality = arePropsEqual) {
-  const listeners = /* @__PURE__ */ new Set();
-  const proxyMap = /* @__PURE__ */ new Map();
-  let _value = initial;
-  const notify = (v) => listeners.forEach((l) => l(v));
-  const baseOn = (listener, options) => {
-    let realListener = listener;
-    let destroy = () => {
+function it(s, t = f) {
+  const e = /* @__PURE__ */ new Set(), i = /* @__PURE__ */ new Map();
+  let r = s;
+  const n = (a) => e.forEach((l) => l(a)), o = (a, l) => {
+    let h = a, g = () => {
     };
-    if (options) {
-      const ctl = new EventControl(listener, options);
-      realListener = ctl.handle;
-      destroy = () => ctl.destroy();
-      proxyMap.set(listener, { wrapped: realListener, destroy });
+    if (l) {
+      const c = new N(a, l);
+      h = c.handle, g = () => c.destroy(), i.set(a, { wrapped: h, destroy: g });
     }
-    if (_value !== void 0) realListener(_value);
-    listeners.add(realListener);
-    return () => {
-      listeners.delete(realListener);
-      destroy();
-      proxyMap.delete(listener);
+    return r !== void 0 && h(r), e.add(h), () => {
+      e.delete(h), g(), i.delete(a);
     };
   };
   return {
     /* emitter behaviour ---------------------------------------- */
     get value() {
-      return _value;
+      return r;
     },
-    emit(v = void 0) {
-      if (_value === void 0 || !equality(_value, v)) {
-        _value = v;
-        notify(v);
-      }
+    emit(a = void 0) {
+      (r === void 0 || !t(r, a)) && (r = a, n(a));
     },
-    on: baseOn,
-    off(listener) {
-      const proxy = proxyMap.get(listener);
-      if (proxy) {
-        listeners.delete(proxy.wrapped);
-        proxy.destroy();
-        proxyMap.delete(listener);
-      } else {
-        listeners.delete(listener);
-      }
+    on: o,
+    off(a) {
+      const l = i.get(a);
+      l ? (e.delete(l.wrapped), l.destroy(), i.delete(a)) : e.delete(a);
     },
     clear() {
-      listeners.clear();
-      proxyMap.forEach((p) => p.destroy());
-      proxyMap.clear();
+      e.clear(), i.forEach((a) => a.destroy()), i.clear();
     },
     /* derived hook --------------------------------------------- */
-    select(selector, eq = arePropsEqual) {
-      return (listener, options) => {
-        let prev;
-        if (_value !== void 0) {
-          const mapped = selector(_value);
-          prev = mapped;
-          listener(mapped);
+    select(a, l = f) {
+      return (h, g) => {
+        let c;
+        if (r !== void 0) {
+          const p = a(r);
+          c = p, h(p);
         }
-        return baseOn(
-          (next) => {
-            const mapped = selector(next);
-            if (prev === void 0 || !eq(prev, mapped)) {
-              prev = mapped;
-              listener(mapped);
-            }
+        return o(
+          (p) => {
+            const y = a(p);
+            (c === void 0 || !l(c, y)) && (c = y, h(y));
           },
-          options
+          g
         );
       };
     }
   };
 }
-
-// src/lib/utils/typed-object.ts
-function enumEntries(record) {
-  return Object.entries(record).map(([k, v]) => {
-    const maybeNum = Number(k);
-    const typedKey = Number.isFinite(maybeNum) && k.trim() !== "" ? maybeNum : k;
-    return [typedKey, v];
+function st(s) {
+  return Object.entries(s).map(([t, e]) => {
+    const i = Number(t);
+    return [Number.isFinite(i) && t.trim() !== "" ? i : t, e];
   });
 }
 export {
-  BasePlugin,
-  CORE_ACTION_TYPES,
-  CapabilityConflictError,
-  CapabilityNotFoundError,
-  CircularDependencyError,
-  DependencyResolver,
-  EventControl,
-  LOAD_DOCUMENT,
-  PluginConfigurationError,
-  PluginInitializationError,
-  PluginNotFoundError,
-  PluginRegistrationError,
-  PluginRegistry,
-  SET_DOCUMENT,
-  SET_DOCUMENT_ERROR,
-  SET_PAGES,
-  SET_ROTATION,
-  SET_SCALE,
-  arePropsEqual,
-  clamp,
-  createBehaviorEmitter,
-  createEmitter,
-  createPluginRegistration,
-  enumEntries,
-  getPagesWithRotatedSize,
-  initialCoreState,
-  loadDocument,
-  setDocument,
-  setDocumentError,
-  setPages,
-  setRotation,
-  setScale
+  Z as BasePlugin,
+  D as CORE_ACTION_TYPES,
+  G as CapabilityConflictError,
+  j as CapabilityNotFoundError,
+  z as CircularDependencyError,
+  C as DependencyResolver,
+  N as EventControl,
+  S as LOAD_DOCUMENT,
+  O as PluginConfigurationError,
+  x as PluginInitializationError,
+  d as PluginNotFoundError,
+  u as PluginRegistrationError,
+  V as PluginRegistry,
+  m as SET_DOCUMENT,
+  b as SET_DOCUMENT_ERROR,
+  R as SET_PAGES,
+  P as SET_ROTATION,
+  E as SET_SCALE,
+  f as arePropsEqual,
+  tt as clamp,
+  it as createBehaviorEmitter,
+  et as createEmitter,
+  X as createPluginRegistration,
+  st as enumEntries,
+  Q as getPagesWithRotatedSize,
+  _ as initialCoreState,
+  K as loadDocument,
+  B as setDocument,
+  W as setDocumentError,
+  J as setPages,
+  H as setRotation,
+  Y as setScale
 };
 //# sourceMappingURL=index.js.map
