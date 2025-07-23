@@ -1,48 +1,39 @@
-// src/lib/manifest.ts
-var VIEWPORT_PLUGIN_ID = "viewport";
-var manifest = {
-  id: VIEWPORT_PLUGIN_ID,
+import { BasePlugin as g, createBehaviorEmitter as l, createEmitter as R } from "@embedpdf/core";
+const h = "viewport", S = {
+  id: h,
   name: "Viewport Plugin",
   version: "1.0.0",
   provides: ["viewport"],
   requires: [],
   optional: [],
   defaultConfig: {
-    enabled: true,
+    enabled: !0,
     viewportGap: 10,
     scrollEndDelay: 300
   }
-};
-
-// src/lib/actions.ts
-var SET_VIEWPORT_METRICS = "SET_VIEWPORT_METRICS";
-var SET_VIEWPORT_SCROLL_METRICS = "SET_VIEWPORT_SCROLL_METRICS";
-var SET_VIEWPORT_GAP = "SET_VIEWPORT_GAP";
-var SET_SCROLL_ACTIVITY = "SET_SCROLL_ACTIVITY";
-function setViewportGap(viewportGap) {
+}, a = "SET_VIEWPORT_METRICS", d = "SET_VIEWPORT_SCROLL_METRICS", n = "SET_VIEWPORT_GAP", y = "SET_SCROLL_ACTIVITY";
+function E(e) {
   return {
-    type: SET_VIEWPORT_GAP,
-    payload: viewportGap
+    type: n,
+    payload: e
   };
 }
-function setViewportMetrics(viewportMetrics) {
+function f(e) {
   return {
-    type: SET_VIEWPORT_METRICS,
-    payload: viewportMetrics
+    type: a,
+    payload: e
   };
 }
-function setViewportScrollMetrics(scrollMetrics) {
+function M(e) {
   return {
-    type: SET_VIEWPORT_SCROLL_METRICS,
-    payload: scrollMetrics
+    type: d,
+    payload: e
   };
 }
-function setScrollActivity(isScrolling) {
-  return { type: SET_SCROLL_ACTIVITY, payload: isScrolling };
+function _(e) {
+  return { type: y, payload: e };
 }
-
-// src/lib/reducer.ts
-var initialState = {
+const v = {
   viewportGap: 0,
   viewportMetrics: {
     width: 0,
@@ -58,80 +49,60 @@ var initialState = {
       y: 0
     }
   },
-  isScrolling: false
-};
-var viewportReducer = (state = initialState, action) => {
-  switch (action.type) {
-    case SET_VIEWPORT_GAP:
-      return { ...state, viewportGap: action.payload };
-    case SET_VIEWPORT_METRICS:
+  isScrolling: !1
+}, $ = (e = v, t) => {
+  switch (t.type) {
+    case n:
+      return { ...e, viewportGap: t.payload };
+    case a:
       return {
-        ...state,
+        ...e,
         viewportMetrics: {
-          width: action.payload.width,
-          height: action.payload.height,
-          scrollTop: action.payload.scrollTop,
-          scrollLeft: action.payload.scrollLeft,
-          clientWidth: action.payload.clientWidth,
-          clientHeight: action.payload.clientHeight,
-          scrollWidth: action.payload.scrollWidth,
-          scrollHeight: action.payload.scrollHeight,
+          width: t.payload.width,
+          height: t.payload.height,
+          scrollTop: t.payload.scrollTop,
+          scrollLeft: t.payload.scrollLeft,
+          clientWidth: t.payload.clientWidth,
+          clientHeight: t.payload.clientHeight,
+          scrollWidth: t.payload.scrollWidth,
+          scrollHeight: t.payload.scrollHeight,
           relativePosition: {
-            x: action.payload.scrollWidth <= action.payload.clientWidth ? 0 : action.payload.scrollLeft / (action.payload.scrollWidth - action.payload.clientWidth),
-            y: action.payload.scrollHeight <= action.payload.clientHeight ? 0 : action.payload.scrollTop / (action.payload.scrollHeight - action.payload.clientHeight)
+            x: t.payload.scrollWidth <= t.payload.clientWidth ? 0 : t.payload.scrollLeft / (t.payload.scrollWidth - t.payload.clientWidth),
+            y: t.payload.scrollHeight <= t.payload.clientHeight ? 0 : t.payload.scrollTop / (t.payload.scrollHeight - t.payload.clientHeight)
           }
         }
       };
-    case SET_VIEWPORT_SCROLL_METRICS:
+    case d:
       return {
-        ...state,
+        ...e,
         viewportMetrics: {
-          ...state.viewportMetrics,
-          scrollTop: action.payload.scrollTop,
-          scrollLeft: action.payload.scrollLeft
+          ...e.viewportMetrics,
+          scrollTop: t.payload.scrollTop,
+          scrollLeft: t.payload.scrollLeft
         },
-        isScrolling: true
+        isScrolling: !0
       };
-    case SET_SCROLL_ACTIVITY:
-      return { ...state, isScrolling: action.payload };
+    case y:
+      return { ...e, isScrolling: t.payload };
     default:
-      return state;
+      return e;
   }
-};
-
-// src/lib/viewport-plugin.ts
-import {
-  BasePlugin,
-  createEmitter,
-  createBehaviorEmitter
-} from "@embedpdf/core";
-var ViewportPlugin = class extends BasePlugin {
-  constructor(id, registry, config) {
-    super(id, registry);
-    this.id = id;
-    this.viewportResize$ = createBehaviorEmitter();
-    this.viewportMetrics$ = createBehaviorEmitter();
-    this.scrollMetrics$ = createBehaviorEmitter();
-    this.scrollReq$ = createEmitter();
-    this.scrollActivity$ = createBehaviorEmitter();
-    /* ------------------------------------------------------------------ */
-    /* “live rect” infrastructure                                          */
-    /* ------------------------------------------------------------------ */
-    this.rectProvider = null;
-    if (config.viewportGap) {
-      this.dispatch(setViewportGap(config.viewportGap));
-    }
-    this.scrollEndDelay = config.scrollEndDelay || 300;
+}, o = class o extends g {
+  constructor(t, i, r) {
+    super(t, i), this.id = t, this.viewportResize$ = l(), this.viewportMetrics$ = l(), this.scrollMetrics$ = l(), this.scrollReq$ = R(), this.scrollActivity$ = l(), this.rectProvider = null, r.viewportGap && this.dispatch(E(r.viewportGap)), this.scrollEndDelay = r.scrollEndDelay || 300;
   }
   buildCapability() {
     return {
       getViewportGap: () => this.state.viewportGap,
       getMetrics: () => this.state.viewportMetrics,
-      getBoundingRect: () => this.rectProvider?.() ?? {
-        origin: { x: 0, y: 0 },
-        size: { width: 0, height: 0 }
+      getBoundingRect: () => {
+        var t;
+        return ((t = this.rectProvider) == null ? void 0 : t.call(this)) ?? {
+          origin: { x: 0, y: 0 },
+          size: { width: 0, height: 0 }
+        };
       },
-      scrollTo: (pos) => this.scrollTo(pos),
+      scrollTo: (t) => this.scrollTo(t),
       isScrolling: () => this.state.isScrolling,
       onScrollChange: this.scrollMetrics$.on,
       onViewportChange: this.viewportMetrics$.on,
@@ -139,83 +110,62 @@ var ViewportPlugin = class extends BasePlugin {
       onScrollActivity: this.scrollActivity$.on
     };
   }
-  setViewportResizeMetrics(viewportMetrics) {
-    this.dispatch(setViewportMetrics(viewportMetrics));
-    this.viewportResize$.emit(this.state.viewportMetrics);
+  setViewportResizeMetrics(t) {
+    this.dispatch(f(t)), this.viewportResize$.emit(this.state.viewportMetrics);
   }
-  setViewportScrollMetrics(scrollMetrics) {
-    if (scrollMetrics.scrollTop !== this.state.viewportMetrics.scrollTop || scrollMetrics.scrollLeft !== this.state.viewportMetrics.scrollLeft) {
-      this.dispatch(setViewportScrollMetrics(scrollMetrics));
-      this.bumpScrollActivity();
-      this.scrollMetrics$.emit({
-        scrollTop: scrollMetrics.scrollTop,
-        scrollLeft: scrollMetrics.scrollLeft
-      });
-    }
+  setViewportScrollMetrics(t) {
+    (t.scrollTop !== this.state.viewportMetrics.scrollTop || t.scrollLeft !== this.state.viewportMetrics.scrollLeft) && (this.dispatch(M(t)), this.bumpScrollActivity(), this.scrollMetrics$.emit({
+      scrollTop: t.scrollTop,
+      scrollLeft: t.scrollLeft
+    }));
   }
-  onScrollRequest(listener) {
-    return this.scrollReq$.on(listener);
+  onScrollRequest(t) {
+    return this.scrollReq$.on(t);
   }
-  registerBoundingRectProvider(provider) {
-    this.rectProvider = provider;
+  registerBoundingRectProvider(t) {
+    this.rectProvider = t;
   }
   bumpScrollActivity() {
-    this.debouncedDispatch(setScrollActivity(false), this.scrollEndDelay);
+    this.debouncedDispatch(_(!1), this.scrollEndDelay);
   }
-  scrollTo(pos) {
-    const { x, y, center, behavior = "auto" } = pos;
-    if (center) {
-      const metrics = this.state.viewportMetrics;
-      const centeredX = x - metrics.clientWidth / 2;
-      const centeredY = y - metrics.clientHeight / 2;
+  scrollTo(t) {
+    const { x: i, y: r, center: w, behavior: c = "auto" } = t;
+    if (w) {
+      const p = this.state.viewportMetrics, T = i - p.clientWidth / 2, u = r - p.clientHeight / 2;
       this.scrollReq$.emit({
-        x: centeredX,
-        y: centeredY,
-        behavior
+        x: T,
+        y: u,
+        behavior: c
       });
-    } else {
+    } else
       this.scrollReq$.emit({
-        x,
-        y,
-        behavior
+        x: i,
+        y: r,
+        behavior: c
       });
-    }
   }
   // Subscribe to store changes to notify onViewportChange
-  onStoreUpdated(prevState, newState) {
-    if (prevState !== newState) {
-      this.viewportMetrics$.emit(newState.viewportMetrics);
-      if (prevState.isScrolling !== newState.isScrolling) {
-        this.scrollActivity$.emit(newState.isScrolling);
-      }
-    }
+  onStoreUpdated(t, i) {
+    t !== i && (this.viewportMetrics$.emit(i.viewportMetrics), t.isScrolling !== i.isScrolling && this.scrollActivity$.emit(i.isScrolling));
   }
-  async initialize(_config) {
+  async initialize(t) {
   }
   async destroy() {
-    super.destroy();
-    this.viewportMetrics$.clear();
-    this.viewportResize$.clear();
-    this.scrollMetrics$.clear();
-    this.scrollReq$.clear();
-    this.scrollActivity$.clear();
-    this.rectProvider = null;
-    if (this.scrollEndTimer) clearTimeout(this.scrollEndTimer);
+    super.destroy(), this.viewportMetrics$.clear(), this.viewportResize$.clear(), this.scrollMetrics$.clear(), this.scrollReq$.clear(), this.scrollActivity$.clear(), this.rectProvider = null, this.scrollEndTimer && clearTimeout(this.scrollEndTimer);
   }
 };
-ViewportPlugin.id = "viewport";
-
-// src/lib/index.ts
-var ViewportPluginPackage = {
-  manifest,
-  create: (registry, _engine, config) => new ViewportPlugin(VIEWPORT_PLUGIN_ID, registry, config),
-  reducer: viewportReducer,
-  initialState
+o.id = "viewport";
+let s = o;
+const P = {
+  manifest: S,
+  create: (e, t, i) => new s(h, e, i),
+  reducer: $,
+  initialState: v
 };
 export {
-  VIEWPORT_PLUGIN_ID,
-  ViewportPlugin,
-  ViewportPluginPackage,
-  manifest
+  h as VIEWPORT_PLUGIN_ID,
+  s as ViewportPlugin,
+  P as ViewportPluginPackage,
+  S as manifest
 };
 //# sourceMappingURL=index.js.map
