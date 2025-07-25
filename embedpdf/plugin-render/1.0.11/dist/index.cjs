@@ -1,0 +1,2 @@
+"use strict";Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});const e=require("./render-plugin-DudUAm2A.cjs"),n="render",t={id:n,name:"Render Plugin",version:"1.0.0",provides:["render"],requires:[],optional:[],defaultConfig:{enabled:!0}},d={manifest:t,create:(r,i)=>new e.RenderPlugin(n,r,i),reducer:()=>{},initialState:{}};exports.RenderPlugin=e.RenderPlugin;exports.RenderPluginPackage=d;
+//# sourceMappingURL=index.cjs.map
