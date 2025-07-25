@@ -1,0 +1,2 @@
+"use strict";Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});const t=require("./rotate-plugin-CF-8rOeB.cjs"),e="rotate",a={id:e,name:"Rotate Plugin",version:"1.0.0",provides:["rotate"],requires:["loader"],optional:["spread"],defaultConfig:{enabled:!0}},o={manifest:a,create:(n,r,i)=>new t.RotatePlugin(e,n,i),reducer:()=>{},initialState:{}};exports.RotatePlugin=t.RotatePlugin;exports.ROTATE_PLUGIN_ID=e;exports.RotatePluginPackage=o;exports.manifest=a;
+//# sourceMappingURL=index.cjs.map
