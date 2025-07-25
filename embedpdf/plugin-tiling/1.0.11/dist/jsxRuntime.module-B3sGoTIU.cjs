@@ -1,2 +1,0 @@
-"use strict";const i=require("preact");var s=0;function p(e,_,f,t,l,c){_||(_={});var n,o,r=_;if("ref"in r)for(o in r={},_)o=="ref"?n=_[o]:r[o]=_[o];var u={type:e,props:r,key:f,ref:n,__k:null,__:null,__b:0,__e:null,__c:null,constructor:void 0,__v:--s,__i:-1,__u:0,__source:l,__self:c};if(typeof e=="function"&&(n=e.defaultProps))for(o in n)r[o]===void 0&&(r[o]=n[o]);return i.options.vnode&&i.options.vnode(u),u}exports.u=p;
-//# sourceMappingURL=jsxRuntime.module-B3sGoTIU.cjs.map
